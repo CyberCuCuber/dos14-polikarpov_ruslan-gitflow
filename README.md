@@ -6,6 +6,6 @@ ____
 ### Home Work 14
 
 - Created repository *dos14-polikarpov_ruslan-gitflow*
-- Added README.md
+- Added *README.md*
 
 ____
