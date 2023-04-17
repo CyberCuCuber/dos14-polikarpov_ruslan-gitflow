@@ -130,4 +130,4 @@ test = ["appdirs (==1.4.4)", "covdefaults (>=2.3)", "pytest (>=7.2.2)", "pytest-
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "c78a11ac7357a6ca4b479734a6077f2c1d51e0d3d9b13444d0444dae52e7fc9a"
+content-hash = "3699263874bb9e36e970d4998b69231e0094de0941c986d26fe8065fe8e651ea"
