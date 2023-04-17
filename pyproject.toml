@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "hw15"
+version = "0.1.0"
+description = "Home Work 15"
+authors = ["RusLAN Polikarpov <ruslan.polikarpov.2014@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+
+[tool.poetry.group.dev]
+optional = true
+
+[tool.poetry.group.dev.dependencies]
+black = "^23.3.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
