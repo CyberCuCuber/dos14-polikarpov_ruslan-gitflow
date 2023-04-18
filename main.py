@@ -52,6 +52,8 @@ def get_users_dicts(id_login: list, id_pass: list):
         return users
     except ValueError:
         print("One of the input lists is missing fields")
+    except Exception as ex:
+        print(f"Something other wrong\n{ex}")
 
 
 if __name__ == "__main__":
