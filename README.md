@@ -17,3 +17,10 @@ ____
 - Added main.py script with optional text output depending on SHELL environment variable
 - The command *black ./* has ben executed.
 ____
+
+### Home Work 16
+
+- Group AuthN
+- Implemented the task of creating a dictionary with data about users, which are transmitted as two lists.
+ As a result the work, a list with dictionaties should be displayed that contain the keys if, login and password their values for each user.
+____
