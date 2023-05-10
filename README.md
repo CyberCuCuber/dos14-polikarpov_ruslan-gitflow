@@ -24,3 +24,8 @@ ____
 - Implemented the task of creating a dictionary with data about users, which are transmitted as two lists.
  As a result the work, a list with dictionaties should be displayed that contain the keys if, login and password their values for each user.
 ____
+
+### Home Work 17
+- Group AuthN
+- Authentification 
+____
