@@ -117,17 +117,6 @@ class Users:
     def get_users(self):
         return self.__users
 
-    def get_user_by_login(self, login_name):
-        """
-        Gets user id
-        :param login_name: user login
-        :return: id if user in all users and None if user is unknown
-        """
-        if login_name in self.__users.keys():
-            return self.__users[login_name]
-        else:
-            return None
-
     @property
     def blocked_users(self):
         return self.__blocked_users
@@ -143,6 +132,16 @@ class Users:
         :return: None
         """
         self.__blocked_users.remove(login)
+        
+    def check_blocked_users(self):
+        """
+        Checking bloked users
+        :return: None
+        """
+        if len(self.__blocked_users):
+            for us in self.__blocked_users:
+                if self.__users[us].check_block():
+                    self.del_block(us)
 
 
 class User:
@@ -175,22 +174,29 @@ class User:
     def user_id(self):
         return self.__id
 
-    def set_block(self):
-        """
-        Sets blocking to User
-        :return: None
-        """
-        self.__blocked = True
-        self.__block_time = datetime.now() + timedelta(minutes=2)
+    @property
+    def block(self):
+        return self.__blocked
 
-    def delete_block(self):
+    @property
+    def failure(self):
+        return self.__failure_cont
+
+    @block.setter
+    def block(self, inf):
         """
-        Delete a user blocking and resets failure count
-        :return:
+        Add or delete blocking to User
+        :param inf: add or del blocking, str
+        :return: 
         """
-        self.__blocked = False
-        self.__block_time = None
-        self.reset_failure_count()
+        match inf:
+            case "add":
+                self.__blocked = inf
+                self.__block_time = datetime.now() + timedelta(minutes=2)
+            case "del":
+                self.__blocked = False
+                self.__block_time = None
+                self.reset_failure_count()
 
     def add_failure(self):
         """
@@ -213,7 +219,7 @@ class User:
         :return: True if too many fails and False if fails count <3
         """
         if self.__failure_cont >= 3:
-            self.set_block()
+            self.block = "add"
             return True
         else:
             return False
@@ -224,7 +230,7 @@ class User:
         :return: True if the user is locked out, False if the user is still locked out
         """
         if datetime.now() >= self.__block_time:
-            self.delete_block()
+            self.block = "del"
             return True
         else:
             return False
@@ -237,16 +243,8 @@ if __name__ == "__main__":
         time.sleep(1)
         # Проверка на наличие в csv-файле новых записей
         if os.stat("input.csv").st_size != 0:
-            # Проверяем на наличие заблокированных пользователей
-            if len(users.blocked_users) > 0:
-                # Получаем список пользователей, которых, возможно, стоит разблокировать
-                unblock_users = users.blocked_users
-                # Проверяем, есть ли пользователи для разблокировки и разблокируем их при наличии
-                for unblock in unblock_users:
-                    flag_block = users.get_users[unblock].check_block()
-                    if flag_block:
-                        users.del_block(unblock)
-
+            # Проверяем на наличие заблокированных пользователей и разблокируем при необходимости
+            users.check_blocked_users()
             # Открываем файл для чтения и считываем новые записи
             with open("input.csv", "r") as file:
                 csv_read = csv.reader(file)
