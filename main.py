@@ -191,7 +191,7 @@ class User:
         """
         match inf:
             case "add":
-                self.__blocked = inf
+                self.__blocked = True
                 self.__block_time = datetime.now() + timedelta(minutes=2)
             case "del":
                 self.__blocked = False
