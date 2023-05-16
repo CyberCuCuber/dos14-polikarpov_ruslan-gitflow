@@ -89,10 +89,12 @@ class Users:
         """
         with open(self.users_yaml, "r") as file:
             yml = yaml.load(file, Loader=yaml.FullLoader)
-            for user in yml["users"]:
-                if self.validate_passwd(user["password"]) is not None:
-                    passwd = Password(user["password"]).passwd
-                    self.add_user(user["login"], passwd, user["entity_id"])
+            print(yml)
+            for types in yml:
+                for user in yml[types]:
+                    if self.validate_passwd(user["password"]) is not None:
+                        passwd = Password(user["password"]).passwd
+                        self.add_user(user["login"], passwd, user["entity_id"])
 
     @staticmethod
     def validate_passwd(password):
@@ -132,7 +134,7 @@ class Users:
         :return: None
         """
         self.__blocked_users.remove(login)
-        
+
     def check_blocked_users(self):
         """
         Checking bloked users
@@ -183,20 +185,20 @@ class User:
         return self.__failure_cont
 
     @block.setter
-    def block(self, inf):
+    def block(self, inf=True):
         """
         Add or delete blocking to User
         :param inf: add or del blocking, str
-        :return: 
+        :return:
         """
-        match inf:
-            case "add":
-                self.__blocked = True
-                self.__block_time = datetime.now() + timedelta(minutes=2)
-            case "del":
-                self.__blocked = False
-                self.__block_time = None
-                self.reset_failure_count()
+        self.__blocked = inf
+        self.__block_time = datetime.now() + timedelta(minutes=2)
+
+    @block.deleter
+    def block(self):
+        self.__blocked = False
+        self.__block_time = None
+        self.reset_failure_count()
 
     def add_failure(self):
         """
@@ -219,7 +221,7 @@ class User:
         :return: True if too many fails and False if fails count <3
         """
         if self.__failure_cont >= 3:
-            self.block = "add"
+            self.block = True
             return True
         else:
             return False
@@ -230,7 +232,7 @@ class User:
         :return: True if the user is locked out, False if the user is still locked out
         """
         if datetime.now() >= self.__block_time:
-            self.block = "del"
+            del self.block
             return True
         else:
             return False
