@@ -1,147 +1,290 @@
 from datetime import datetime, timedelta
-
-import csv
-import json
-import time
+import hashlib
 import yaml
+import time
 import os
+import csv
 
 
-def get_users_from_json(json_file: str):
+class StringValidation:
     """
-    Get users info from json-file
-    :param json_file: name or path to json file
-    :return: list with users dictionaries
+    Validation string
     """
-    users_list = []
-    with open(json_file, "r") as file:
-        js = json.load(file)
-        for user in js["users"]:
-            if validate_passwd(user['password']):
-                users_list.append({"id": user["id"], "login": user["login"], "password": user["password"]})
-    return users_list
+    def __init__(self, string):
+        """
+        Validation string
+        :param string: string
+        """
+        self.string = string
+
+    def check_length(self):
+        """
+        Checks length string
+        :return: True or False
+        """
+        if len(self.string) >= 8:
+            return True
+        else:
+            return False
+
+    def check_numbers(self):
+        """
+        Checks number in string
+        :return: True or False
+        """
+        if any(ch.isdigit() for ch in self.string) and not self.string.isdigit():
+            return True
+        else:
+            return False
+
+    def check_upper_lower(self):
+        """
+        Checks upper and lower letters in string
+        :return: True or False
+        """
+        if self.string.isupper() or self.string.islower():
+            return False
+        else:
+            return True
 
 
-def get_users_from_yaml(yaml_file: str):
+class Password(StringValidation):
     """
-    Get users info from yaml-file
-    :param yaml_file: name or path to yaml file
-    :return: list with users dictionaries
+    Child class from StringValidation
     """
-    users_list = []
-    with open(yaml_file, "r") as file:
-        yml = yaml.load(file, Loader=yaml.FullLoader)
-        for user in yml["users"]:
-            if validate_passwd(user['password']):
-                users_list.append({"id": user["id"], "login": user["login"], "password": user["password"]})
-    return users_list
+    def __init__(self, password):
+        """
+        Validate user password
+        :param password: password string
+        """
+        super().__init__(password)
+        if self.check_length() and self.check_numbers() and self.check_upper_lower():
+            self.__password = hashlib.sha512(password.encode()).hexdigest()
+        else:
+            self.__password = None
+
+    @property
+    def passwd(self):
+        return self.__password
 
 
-def validate_passwd(password: str):
+class Users:
     """
-    Validation password
-    :param password: password
-    :return: if valid returns True, else returns False
+    Users class
     """
-    if len(password) < 8:
-        return False
-    elif password.isupper() or password.islower() or password.isdigit():
-        return False
-    elif not any(ch.isdigit() for ch in password):
-        return False
-    else:
-        return True
+    def __init__(self, users_yaml: str):
+        """
+        Creates all registered users
+        :param users_yaml: yaml file with users
+        """
+        self.__users = {}
+        self.users_yaml = users_yaml
+        self.__blocked_users = []
+        self.read_yaml()
+
+    def read_yaml(self):
+        """
+        Reads yaml file and adds users obj
+        :return: None
+        """
+        with open(self.users_yaml, "r") as file:
+            yml = yaml.load(file, Loader=yaml.FullLoader)
+            print(yml)
+            for types in yml:
+                for user in yml[types]:
+                    if self.validate_passwd(user["password"]) is not None:
+                        passwd = Password(user["password"]).passwd
+                        self.add_user(user["login"], passwd, user["entity_id"])
+
+    @staticmethod
+    def validate_passwd(password):
+        """
+        Static valid password in sha512
+        :param password: password
+        :return: Valid password in sha512
+        """
+        return Password(password).passwd
+
+    def add_user(self, login, passwd, entity_id):
+        """
+        Adds user obj to users dict
+        :param login: login
+        :param passwd: valid password in sha512
+        :param entity_id: user id
+        :return: None
+        """
+        self.__users[login] = User(login, passwd, entity_id)
+
+    @property
+    def get_users(self):
+        return self.__users
+
+    @property
+    def blocked_users(self):
+        return self.__blocked_users
+
+    @blocked_users.setter
+    def blocked_users(self, login):
+        self.__blocked_users.append(login)
+
+    def del_block(self, login):
+        """
+        Deletes blocking for user
+        :param login: user login
+        :return: None
+        """
+        self.__blocked_users.remove(login)
+
+    def check_blocked_users(self):
+        """
+        Checking bloked users
+        :return: None
+        """
+        if len(self.__blocked_users):
+            for us in self.__blocked_users:
+                if self.__users[us].check_block():
+                    self.del_block(us)
 
 
-def validate_user(users_list: list, login: str, passwd: str):
+class User:
     """
-    User validation
-    :param users_list: list with users dictionaries
-    :param login: login
-    :param passwd: password
-    :return: True if unknown user login, False if wrong password and user id if validation successfully
+    Class User
     """
-    out = True
-    for user in users_list:
-        if user["login"] == login:
-            if user["password"] == passwd:
-                out = user["id"]
-            else:
-                out = False
-    return out
+    def __init__(self, login, password, user_id):
+        """
+        User obj
+        :param login: user login
+        :param password: password in sha512 encoding
+        :param user_id: user id
+        """
+        self.__login = login
+        self.__password = password
+        self.__id = user_id
+        self.__blocked = False
+        self.__block_time = None
+        self.__failure_cont = 0
+
+    @property
+    def login(self):
+        return self.__login
+
+    @property
+    def passwd(self):
+        return self.__password
+
+    @property
+    def user_id(self):
+        return self.__id
+
+    @property
+    def block(self):
+        return self.__blocked
+
+    @property
+    def failure(self):
+        return self.__failure_cont
+
+    @block.setter
+    def block(self, inf=True):
+        """
+        Add or delete blocking to User
+        :param inf: add or del blocking, str
+        :return:
+        """
+        self.__blocked = inf
+        self.__block_time = datetime.now() + timedelta(minutes=2)
+
+    @block.deleter
+    def block(self):
+        self.__blocked = False
+        self.__block_time = None
+        del self.failure
+
+    def add_failure(self):
+        """
+        Adding failure attempt to validate credentials
+        :return: True if too many fails and False if fails count <3
+        """
+        self.__failure_cont += 1
+        return self.check_fails()
+
+    @failure.deleter
+    def failure(self):
+        """
+        Reset failure count
+        :return: None
+        """
+        self.__failure_cont = 0
+
+    def check_fails(self):
+        """
+        Checks failure count and block user if too many fails make
+        :return: True if too many fails and False if fails count <3
+        """
+        if self.__failure_cont >= 3:
+            self.block = True
+            return True
+        else:
+            return False
+
+    def check_block(self):
+        """
+        Checks if the user is locked out and unlocks if the lock timeout expires
+        :return: True if the user is locked out, False if the user is still locked out
+        """
+        if datetime.now() >= self.__block_time:
+            del self.block
+            return True
+        else:
+            return False
 
 
-def check_block_timeout(blocked_users: dict):
-    """
-    Check block timeout for user
-    :param blocked_users: dict with blocked users
-    :return: list with user logins to remove from blocked users
-    """
-    time_now = datetime.now()
-    delete_keys = []
-    for key, block_time in blocked_users.items():
-        if block_time < time_now:
-            delete_keys.append(key)
-    return delete_keys
+if __name__ == "__main__":
+    # Создаём объект пользователей из файла yaml
+    users = Users("logins.yaml")
+    while True:
+        time.sleep(1)
+        # Проверка на наличие в csv-файле новых записей
+        if os.stat("input.csv").st_size != 0:
+            # Проверяем на наличие заблокированных пользователей и разблокируем при необходимости
+            users.check_blocked_users()
+            # Открываем файл для чтения и считываем новые записи
+            with open("input.csv", "r") as file:
+                csv_read = csv.reader(file)
+                # Проходимся построчно по файлу
+                for user in csv_read:
+                    # Проверяем на статус пользователя, если он не заблокирован, то проводим валидацию
+                    logged_user = user[0]
+                    # Проверяем, нет ли пользователя в списке заблокированных
+                    if logged_user not in users.blocked_users:
+                        # Проверяем наличие пользователя в базе
+                        if logged_user in users.get_users.keys():
+                            # Хешируем пароль
+                            password = hashlib.sha512(user[1].encode()).hexdigest()
+                            # Проверяем, совпадает ли пароль
+                            if password != users.get_users[logged_user].passwd:
+                                # Проверка количества ошибок
+                                if users.get_users[logged_user].add_failure():
+                                    users.blocked_users = logged_user
+                                print("Неверный пользователь или пароль")
 
-#Получаем список всех пользователей
-users = [*get_users_from_json("users.json"), *get_users_from_yaml("users.yaml")]
-
-#Создаем 2 словаря с попытками и заблокированными пользователями
-retryes = {user["login"]: 3 for user in [us for us in users]}
-blocked_users = {}
-
-#Запускаем бесконечный цикл проверки файла с пользователями
-while True:
-    time.sleep(1)
-    #Проверка на наличие в csv-файле новых записей
-    if os.stat("input.csv").st_size != 0:
-        #Проверяем на наличие заблокированных пользователей
-        if len(blocked_users) > 0:
-            #Получаем список пользователей, которых стоит разблокировать
-            keys = check_block_timeout(blocked_users)
-            #Проверяем, есть ли пользователи для разблокировки и разблокируем их при наличии
-            if len(keys) > 0:
-                for key in keys:
-                    del blocked_users[key]
-                    retryes[key] = 3
-        #Открываем файл для чтения и считываем новые записи
-        with open("input.csv", "r") as file:
-            csv_read = csv.reader(file)
-            #Проходимся построчно по файлу
-            for user in csv_read:
-                #Проверяем на статус пользователя, если он не заблокирован, то проводим валидацию
-                if user[0] not in blocked_users.keys():
-                    #Получаем флаг, который говорит о статусе валидации введеных данных
-                    flag = validate_user(users, user[0], user[1])
-                    match flag:
-                        #Первым проверяем, есть ли пользователь
-                        case True:
-                            print("Неверный пользователь или пароль")
-                        #Вторым проверяем на неправильный пароль. Уменьшаем количество попыток и если оно становится =0, то блокируем пользователя
-                        case False:
-                            print("Неверный пользователь или пароль")
-                            retryes[user[0]] -= 1
-                            if retryes[user[0]] == 0:
-                                blocked_users[user[0]] = datetime.now() + timedelta(minutes=2)
-                        #Приветствуем залогинившегося пользователя по id при прохождении всех проверок
-                        case _:
-                            print(f"Привет {flag}")
-                else:
-                    #Выводим сообщение о том, что пользователь заблокирован, если он находится в блокировке
-
-                    print("Пользователь заблокирован")
-        #Запускаем цикл для очистки csv после проведения валидации. Цикл ожидает момент, когда файл будет разрешген к редактированию
-        a = True
-        while a:
-            time.sleep(1)
-            try:
-                with open("input.csv", "w") as file:
-                    file.write("")
-                print("Файл очищен")
-                a = False
-            except PermissionError:
-                a = True
-                print("Файл пока занят")
-    else:
-        print("Нет записей")
+                            else:
+                                print(f"Привет {users.get_users[logged_user].user_id}")
+                        else:
+                            print("Пользователь не найден")
+                    else:
+                        print("Пользователь заблокирован")
+            # Запускаем цикл для очистки csv после проведения валидации. Цикл ожидает момент, когда файл будет разрешен к редактированию
+            a = True
+            while a:
+                time.sleep(1)
+                try:
+                    with open("input.csv", "w") as file:
+                        file.write("")
+                    print("Файл очищен")
+                    a = False
+                except PermissionError:
+                    a = True
+                    print("Файл пока занят")
+        else:
+            print("Нет записей")
