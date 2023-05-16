@@ -198,7 +198,7 @@ class User:
     def block(self):
         self.__blocked = False
         self.__block_time = None
-        self.reset_failure_count()
+        del self.failure
 
     def add_failure(self):
         """
@@ -208,7 +208,8 @@ class User:
         self.__failure_cont += 1
         return self.check_fails()
 
-    def reset_failure_count(self):
+    @failure.deleter
+    def failure(self):
         """
         Reset failure count
         :return: None
