@@ -1,11 +1,9 @@
 from datetime import datetime, timedelta
-from flask import Flask, request, make_response, abort
+from flask import Flask, request, make_response
 import hashlib
 import yaml
 import jwt
 import base64
-
-SECRET = b'MXEydzNlNHI1dFQlUiRFI1dAUSE='
 
 
 class Error(Exception):
@@ -76,13 +74,13 @@ class Password(StringValidation):
     Child class from StringValidation
     """
 
-    def __init__(self, password):
+    def __init__(self, password=None):
         """
         Validate user password
         :param password: password string
         """
         super().__init__(password)
-        if self.check_length() and self.check_numbers() and self.check_upper_lower():
+        if password is not None and self.check_length() and self.check_numbers() and self.check_upper_lower():
             self.__password = hashlib.sha512(password.encode()).hexdigest()
         else:
             self.__password = None
@@ -90,6 +88,30 @@ class Password(StringValidation):
     @property
     def passwd(self):
         return self.__password
+
+    @property
+    def key(self):
+        return b'MXEydzNlNHI1dFQlUiRFI1dAUSE='
+
+    @classmethod
+    def __verify_obj(cls, other):
+        """
+        Verifying objects to membership Password
+        :param other: class object
+        :return: object or error
+        """
+        if not isinstance(other, Password):
+            raise TypeError("Isn't Password obj")
+        else:
+            return other
+
+    def __eq__(self, other):
+        try:
+            verified = self.__verify_obj(other)
+            return self.passwd == verified.passwd
+        except TypeError:
+            print("Only objects of the same class can be compared")
+            return None
 
 
 class Users:
@@ -116,32 +138,32 @@ class Users:
             yml = yaml.load(file, Loader=yaml.FullLoader)
             for types in yml:
                 for user in yml[types]:
-                    if self.validate_passwd(user["password"]) is not None:
-                        passwd = Password(user["password"]).passwd
-                        self.add_user(user["login"], passwd, user["client_id"])
+                    passwort_obj = self.validate_passwd(user["password"])
+                    if passwort_obj.passwd is not None:
+                        self.add_user(user["login"], passwort_obj, user["client_id"])
 
     @staticmethod
     def validate_passwd(password):
         """
         Static valid password in sha512
         :param password: password
-        :return: Valid password in sha512
+        :return: Valid password obj
         """
-        return Password(password).passwd
+        return Password(password)
 
-    def add_user(self, login, passwd, client_id):
+    def add_user(self, login, passwd_obj, client_id):
         """
         Adds user obj to users dict
         :param login: login
-        :param passwd: valid password in sha512
+        :param passwd_obj: valid password obj
         :param client_id: user id
         :return: None
         """
-        self.__users[login] = User(login, passwd, client_id)
+        self.__users[login] = User(login, passwd_obj, client_id)
         user_data = [{
             "id": client_id,
             "login": login,
-            "password": passwd
+            "password": passwd_obj.passwd
         }]
         with open("logins_sha.yaml", "a") as yaml_file:
             yaml.dump(user_data, yaml_file)
@@ -162,15 +184,15 @@ class Users:
         else:
             return False
 
-    def login_att_response(self, input_login, input_password):
+    def login_att_response(self, input_login, input_password_obj):
         """
         Attemption to log in with response
         :param input_login: user login
-        :param input_password: user password
+        :param input_password_obj: user password obj
         :return: JWT with client id payload - success, False - wrong password, None - unknown login
         """
         try:
-            response = self.get_users[input_login].login_attempt(input_password)
+            response = self.get_users[input_login].login_attempt(input_password_obj)
             return response
         except KeyError:
             return None
@@ -181,7 +203,7 @@ class Users:
         :param token: JWT-token
         :return: exception - wrong token, client id - success
         """
-        token_id = jwt.decode(token, base64.b64decode(SECRET).decode(), algorithms=["HS256"])["client_id"]
+        token_id = jwt.decode(token, base64.b64decode(Password().key).decode(), algorithms=["HS256"])["client_id"]
         if self.check_id(token_id):
             return token_id
         else:
@@ -197,7 +219,7 @@ class Users:
         """
         hash_password = self.validate_passwd(reg_password)
         if not self.check_id(reg_id) and reg_login not in self.get_users.keys():
-            if hash_password is not None:
+            if hash_password.passwd is not None:
                 self.add_user(reg_login, hash_password, reg_id)
             else:
                 raise WeakPassword
@@ -210,15 +232,15 @@ class User:
     Class User
     """
 
-    def __init__(self, login, password, user_id):
+    def __init__(self, login, password_obj, user_id):
         """
         User obj
         :param login: user login
-        :param password: password in sha512 encoding
+        :param password_obj: password obj
         :param user_id: user id
         """
         self.__login = login
-        self.__password = password
+        self.__password = password_obj
         self.__id = user_id
         self.__blocked = False
         self.__block_time = None
@@ -295,17 +317,17 @@ class User:
         Makes JWT with client id payload
         :return: JWT
         """
-        return jwt.encode({"client_id": self.user_id}, base64.b64decode(SECRET).decode(), algorithm="HS256")
+        return jwt.encode({"client_id": self.user_id}, base64.b64decode(self.passwd.key).decode(), algorithm="HS256")
 
-    def login_attempt(self, input_password):
+    def login_attempt(self, input_password_obj):
         """
         Attempt to log in
-        :param input_password: password to validate
+        :param input_password_obj: password object to validate
         :return: False - wrong password, JWT - success
         """
         if self.block:
             self.check_block()
-        if input_password != self.passwd or self.block:
+        if not input_password_obj == self.passwd or self.block:
             self.failure = True
             self.check_fails()
             return False
@@ -313,14 +335,14 @@ class User:
             return self.make_jwt()
 
 
-#Очищаем файл с паролями login_sha.yaml
+# Очищаем файл с паролями login_sha.yaml
 with open("logins_sha.yaml", "w") as fil:
     fil.write("")
 
-#Создаём объект со всеми пользователями
+# Создаём объект со всеми пользователями
 users = Users("logins.yaml")
 
-#Создаём объект приложения Flask
+# Создаём объект приложения Flask
 app = Flask(__name__)
 
 
@@ -331,17 +353,23 @@ def app_login():
     :return: отправляет ответ с токеном JWT
     """
     request_data = request.json
-    login = request_data["login"]
-    password = hashlib.sha512(request_data["password"].encode()).hexdigest()
-    resp = users.login_att_response(login, password)
-    print(resp)
-    if resp:
-        response = make_response({"token": resp})
-        response.status = 200
-    else:
+    try:
+        login = request_data["login"]
+        password_obj = Password(request_data["password"])
+        resp = users.login_att_response(login, password_obj)
+        if resp:
+            response = make_response({"token": resp})
+            response.status = 200
+        else:
+            response = make_response({
+                "status": "error",
+                "message": "login or password incorrect"
+            })
+            response.status = 403
+    except KeyError:
         response = make_response({
             "status": "error",
-            "message": "login or password incorrect"
+            "message": "required keys are missing"
         })
         response.status = 403
     return response
@@ -354,14 +382,24 @@ def app_token_validate():
     :return: Отправляет ответ с ID юзера
     """
     request_data = request.json
-    token = request_data["token"]
     try:
+        token = request_data["token"]
         resp = users.check_jwt(token)
         response = make_response({"client_id": resp})
         response.status = 200
-        return response
-    except:
-        abort(403)
+    except KeyError:
+        response = make_response({
+            "status": "error",
+            "message": "required keys are missing"
+        })
+        response.status = 403
+    except WrongToken:
+        response = make_response({
+            "status": "error",
+            "message": "unknown token"
+        })
+        response.status = 403
+    return response
 
 
 @app.route("/api/v1/identity", methods=["PUT"])
@@ -380,12 +418,16 @@ def app_register_user():
         message = {"status": "ok"}
         response = make_response(message)
         response.status = 200
+    except KeyError:
+        message = "required keys are missing"
+        response = make_response({"status": "error", "message": message})
+        response.status = 403
     except WeakPassword:
-        message = "<Something wrong>"
+        message = "incorrect password"
         response = make_response({"status": "error", "message": message})
         response.status = 403
     except InaccessibleID:
-        message = f"Login and password for client {request_data['client_id']} already exists"
+        message = f"login and password for client {request_data['client_id']} already exists"
         response = make_response({"status": "error", "message": message})
         response.status = 403
     return response
