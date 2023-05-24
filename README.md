@@ -33,3 +33,8 @@ ____
 - Group AuthN
 - Code using object-oriented programming that performs the authorization function
 ___
+###
+- Group AuthN
+- Аdded a Flask framework for processing requests
+___
+
