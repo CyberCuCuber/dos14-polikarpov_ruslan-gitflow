@@ -1,13 +1,15 @@
 [tool.poetry]
-name = "hw17"
-version = "0.1.1"
-description = "Home Work 17"
+name = "hw19"
+version = "0.1.2"
+description = "Home Work 19"
 authors = ["RusLAN Polikarpov <ruslan.polikarpov.2014@gmail.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.11"
 PyYAML = "^6.0"
+flask = "^2.3.2"
+PyJWT = "^2.7.0"
 
 [tool.poetry.group.dev]
 optional = true
