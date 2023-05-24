@@ -1,15 +1,36 @@
 from datetime import datetime, timedelta
+from flask import Flask, request, make_response
 import hashlib
 import yaml
-import time
-import os
-import csv
+import jwt
+import base64
+
+
+class Error(Exception):
+    """Base user exception class"""
+    pass
+
+
+class WeakPassword(Error):
+    """Wrong password exception"""
+    pass
+
+
+class InaccessibleID(Error):
+    """Inaccessible ID exception"""
+    pass
+
+
+class WrongToken(Error):
+    """Wrong token exception"""
+    pass
 
 
 class StringValidation:
     """
     Validation string
     """
+
     def __init__(self, string):
         """
         Validation string
@@ -52,13 +73,14 @@ class Password(StringValidation):
     """
     Child class from StringValidation
     """
-    def __init__(self, password):
+
+    def __init__(self, password=None):
         """
         Validate user password
         :param password: password string
         """
         super().__init__(password)
-        if self.check_length() and self.check_numbers() and self.check_upper_lower():
+        if password is not None and self.check_length() and self.check_numbers() and self.check_upper_lower():
             self.__password = hashlib.sha512(password.encode()).hexdigest()
         else:
             self.__password = None
@@ -67,19 +89,44 @@ class Password(StringValidation):
     def passwd(self):
         return self.__password
 
+    @property
+    def key(self):
+        return b'MXEydzNlNHI1dFQlUiRFI1dAUSE='
+
+    @classmethod
+    def __verify_obj(cls, other):
+        """
+        Verifying objects to membership Password
+        :param other: class object
+        :return: object or error
+        """
+        if not isinstance(other, Password):
+            raise TypeError("Isn't Password obj")
+        else:
+            return other
+
+    def __eq__(self, other):
+        try:
+            verified = self.__verify_obj(other)
+            return self.passwd == verified.passwd
+        except TypeError:
+            print("Only objects of the same class can be compared")
+            return None
+
 
 class Users:
     """
     Users class
     """
+
     def __init__(self, users_yaml: str):
         """
         Creates all registered users
         :param users_yaml: yaml file with users
         """
         self.__users = {}
+        self.__users_id_login = {}
         self.users_yaml = users_yaml
-        self.__blocked_users = []
         self.read_yaml()
 
     def read_yaml(self):
@@ -89,76 +136,111 @@ class Users:
         """
         with open(self.users_yaml, "r") as file:
             yml = yaml.load(file, Loader=yaml.FullLoader)
-            print(yml)
             for types in yml:
                 for user in yml[types]:
-                    if self.validate_passwd(user["password"]) is not None:
-                        passwd = Password(user["password"]).passwd
-                        self.add_user(user["login"], passwd, user["entity_id"])
+                    passwort_obj = self.validate_passwd(user["password"])
+                    if passwort_obj.passwd is not None:
+                        self.add_user(user["login"], passwort_obj, user["client_id"])
 
     @staticmethod
     def validate_passwd(password):
         """
         Static valid password in sha512
         :param password: password
-        :return: Valid password in sha512
+        :return: Valid password obj
         """
-        return Password(password).passwd
+        return Password(password)
 
-    def add_user(self, login, passwd, entity_id):
+    def add_user(self, login, passwd_obj, client_id):
         """
         Adds user obj to users dict
         :param login: login
-        :param passwd: valid password in sha512
-        :param entity_id: user id
+        :param passwd_obj: valid password obj
+        :param client_id: user id
         :return: None
         """
-        self.__users[login] = User(login, passwd, entity_id)
+        self.__users[login] = User(login, passwd_obj, client_id)
+        user_data = [{
+            "id": client_id,
+            "login": login,
+            "password": passwd_obj.passwd
+        }]
+        with open("logins_sha.yaml", "a") as yaml_file:
+            yaml.dump(user_data, yaml_file)
+        self.__users_id_login[client_id] = login
 
     @property
     def get_users(self):
         return self.__users
 
-    @property
-    def blocked_users(self):
-        return self.__blocked_users
-
-    @blocked_users.setter
-    def blocked_users(self, login):
-        self.__blocked_users.append(login)
-
-    def del_block(self, login):
+    def check_id(self, client_id):
         """
-        Deletes blocking for user
-        :param login: user login
+        Checks availability of ID
+        :param client_id: id
+        :return: True if ID is available
+        """
+        if client_id in self.__users_id_login:
+            return True
+        else:
+            return False
+
+    def login_att_response(self, input_login, input_password_obj):
+        """
+        Attemption to log in with response
+        :param input_login: user login
+        :param input_password_obj: user password obj
+        :return: JWT with client id payload - success, False - wrong password, None - unknown login
+        """
+        try:
+            response = self.get_users[input_login].login_attempt(input_password_obj)
+            return response
+        except KeyError:
+            return None
+
+    def check_jwt(self, token):
+        """
+        Validate JWT token
+        :param token: JWT-token
+        :return: exception - wrong token, client id - success
+        """
+        token_id = jwt.decode(token, base64.b64decode(Password().key).decode(), algorithms=["HS256"])["client_id"]
+        if self.check_id(token_id):
+            return token_id
+        else:
+            raise WrongToken
+
+    def register_user(self, reg_id, reg_login, reg_password):
+        """
+        Validate and register new user
+        :param reg_id: id to register
+        :param reg_login: login to register
+        :param reg_password: password to register
         :return: None
         """
-        self.__blocked_users.remove(login)
-
-    def check_blocked_users(self):
-        """
-        Checking bloked users
-        :return: None
-        """
-        if len(self.__blocked_users):
-            for us in self.__blocked_users:
-                if self.__users[us].check_block():
-                    self.del_block(us)
+        hash_password = self.validate_passwd(reg_password)
+        if not self.check_id(reg_id) and reg_login not in self.get_users.keys():
+            if hash_password.passwd is not None:
+                self.add_user(reg_login, hash_password, reg_id)
+            else:
+                raise WeakPassword
+        else:
+            raise InaccessibleID
 
 
 class User:
     """
     Class User
     """
-    def __init__(self, login, password, user_id):
+
+    def __init__(self, login, password_obj, user_id):
         """
         User obj
         :param login: user login
-        :param password: password in sha512 encoding
+        :param password_obj: password obj
         :param user_id: user id
         """
         self.__login = login
-        self.__password = password
+        self.__password = password_obj
         self.__id = user_id
         self.__blocked = False
         self.__block_time = None
@@ -200,14 +282,6 @@ class User:
         self.__block_time = None
         del self.failure
 
-    def add_failure(self):
-        """
-        Adding failure attempt to validate credentials
-        :return: True if too many fails and False if fails count <3
-        """
-        self.__failure_cont += 1
-        return self.check_fails()
-
     @failure.deleter
     def failure(self):
         """
@@ -216,16 +290,19 @@ class User:
         """
         self.__failure_cont = 0
 
+    @failure.setter
+    def failure(self, inf=False):
+        match inf:
+            case True:
+                self.__failure_cont += 1
+
     def check_fails(self):
         """
         Checks failure count and block user if too many fails make
-        :return: True if too many fails and False if fails count <3
+        :return: None
         """
-        if self.__failure_cont >= 3:
+        if self.failure >= 3:
             self.block = True
-            return True
-        else:
-            return False
 
     def check_block(self):
         """
@@ -234,57 +311,126 @@ class User:
         """
         if datetime.now() >= self.__block_time:
             del self.block
-            return True
-        else:
+
+    def make_jwt(self):
+        """
+        Makes JWT with client id payload
+        :return: JWT
+        """
+        return jwt.encode({"client_id": self.user_id}, base64.b64decode(self.passwd.key).decode(), algorithm="HS256")
+
+    def login_attempt(self, input_password_obj):
+        """
+        Attempt to log in
+        :param input_password_obj: password object to validate
+        :return: False - wrong password, JWT - success
+        """
+        if self.block:
+            self.check_block()
+        if not input_password_obj == self.passwd or self.block:
+            self.failure = True
+            self.check_fails()
             return False
-
-
-if __name__ == "__main__":
-    # Создаём объект пользователей из файла yaml
-    users = Users("logins.yaml")
-    while True:
-        time.sleep(1)
-        # Проверка на наличие в csv-файле новых записей
-        if os.stat("input.csv").st_size != 0:
-            # Проверяем на наличие заблокированных пользователей и разблокируем при необходимости
-            users.check_blocked_users()
-            # Открываем файл для чтения и считываем новые записи
-            with open("input.csv", "r") as file:
-                csv_read = csv.reader(file)
-                # Проходимся построчно по файлу
-                for user in csv_read:
-                    # Проверяем на статус пользователя, если он не заблокирован, то проводим валидацию
-                    logged_user = user[0]
-                    # Проверяем, нет ли пользователя в списке заблокированных
-                    if logged_user not in users.blocked_users:
-                        # Проверяем наличие пользователя в базе
-                        if logged_user in users.get_users.keys():
-                            # Хешируем пароль
-                            password = hashlib.sha512(user[1].encode()).hexdigest()
-                            # Проверяем, совпадает ли пароль
-                            if password != users.get_users[logged_user].passwd:
-                                # Проверка количества ошибок
-                                if users.get_users[logged_user].add_failure():
-                                    users.blocked_users = logged_user
-                                print("Неверный пользователь или пароль")
-
-                            else:
-                                print(f"Привет {users.get_users[logged_user].user_id}")
-                        else:
-                            print("Пользователь не найден")
-                    else:
-                        print("Пользователь заблокирован")
-            # Запускаем цикл для очистки csv после проведения валидации. Цикл ожидает момент, когда файл будет разрешен к редактированию
-            a = True
-            while a:
-                time.sleep(1)
-                try:
-                    with open("input.csv", "w") as file:
-                        file.write("")
-                    print("Файл очищен")
-                    a = False
-                except PermissionError:
-                    a = True
-                    print("Файл пока занят")
         else:
-            print("Нет записей")
+            return self.make_jwt()
+
+
+# Очищаем файл с паролями login_sha.yaml
+with open("logins_sha.yaml", "w") as fil:
+    fil.write("")
+
+# Создаём объект со всеми пользователями
+users = Users("logins.yaml")
+
+# Создаём объект приложения Flask
+app = Flask(__name__)
+
+
+@app.route("/api/v1/identity/login", methods=["POST"])
+def app_login():
+    """
+    Обработка POST-метода для попытки входа
+    :return: отправляет ответ с токеном JWT
+    """
+    request_data = request.json
+    try:
+        login = request_data["login"]
+        password_obj = Password(request_data["password"])
+        resp = users.login_att_response(login, password_obj)
+        if resp:
+            response = make_response({"token": resp})
+            response.status = 200
+        else:
+            response = make_response({
+                "status": "error",
+                "message": "login or password incorrect"
+            })
+            response.status = 403
+    except KeyError:
+        response = make_response({
+            "status": "error",
+            "message": "required keys are missing"
+        })
+        response.status = 403
+    return response
+
+
+@app.route("/api/v1/identity/validate", methods=["GET"])
+def app_token_validate():
+    """
+    Обрабатывает GET-запрос валидации токена
+    :return: Отправляет ответ с ID юзера
+    """
+    request_data = request.json
+    try:
+        token = request_data["token"]
+        resp = users.check_jwt(token)
+        response = make_response({"client_id": resp})
+        response.status = 200
+    except KeyError:
+        response = make_response({
+            "status": "error",
+            "message": "required keys are missing"
+        })
+        response.status = 403
+    except WrongToken:
+        response = make_response({
+            "status": "error",
+            "message": "unknown token"
+        })
+        response.status = 403
+    return response
+
+
+@app.route("/api/v1/identity", methods=["PUT"])
+def app_register_user():
+    """
+    Обработка PUT-запроса создания нового пользователя
+    :return:
+    """
+    request_data = request.get_json()
+    try:
+        users.register_user(
+            request_data["client_id"],
+            request_data["login"],
+            request_data["password"]
+        )
+        message = {"status": "ok"}
+        response = make_response(message)
+        response.status = 200
+    except KeyError:
+        message = "required keys are missing"
+        response = make_response({"status": "error", "message": message})
+        response.status = 403
+    except WeakPassword:
+        message = "incorrect password"
+        response = make_response({"status": "error", "message": message})
+        response.status = 403
+    except InaccessibleID:
+        message = f"login and password for client {request_data['client_id']} already exists"
+        response = make_response({"status": "error", "message": message})
+        response.status = 403
+    return response
+
+
+app.run()
