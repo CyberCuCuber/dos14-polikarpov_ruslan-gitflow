@@ -1,0 +1,18 @@
+- name: Install and start app 
+  hosts: all
+  vars_files:
+    - global_vars.yaml
+  roles:
+    - role: user
+      become: yes
+    - role: install_git
+    - role: python
+      become: yes
+    - role: poetry
+      become_user: "{{ service_user }}"
+    - role: app_depencies
+      become_user: "{{ service_user }}"
+      become: true
+    - role: start_app
+      become_user: root
+      become: true

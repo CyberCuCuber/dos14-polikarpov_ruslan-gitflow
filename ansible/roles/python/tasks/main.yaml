@@ -1,0 +1,3 @@
+- name: Install python 3.11.3
+  ansible.builtin.apt:
+    name: "python{{ python_version }}"

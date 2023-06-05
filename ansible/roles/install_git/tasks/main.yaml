@@ -1,0 +1,6 @@
+- name: Install git
+  become_user: "{{ service_user }}"
+  ansible.builtin.apt:
+    name: git
+    state: present
+    

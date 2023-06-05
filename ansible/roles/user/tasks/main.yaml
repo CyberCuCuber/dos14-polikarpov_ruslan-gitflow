@@ -1,0 +1,7 @@
+- name: Create user 'authn'
+  ansible.builtin.user:
+    name: "{{ service_user }}"
+    group: "{{ def_group }}" 
+    state: present
+
+   
