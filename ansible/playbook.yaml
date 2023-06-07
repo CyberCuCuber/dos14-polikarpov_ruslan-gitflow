@@ -6,10 +6,11 @@
     - role: user
       become: yes
     - role: install_git
+      become: yes
     - role: python
       become: yes
     - role: poetry
-      become_user: "{{ service_user }}"
+      become: yes
     - role: app_depencies
       become_user: "{{ service_user }}"
       become: true
