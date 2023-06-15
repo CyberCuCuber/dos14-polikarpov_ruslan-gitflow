@@ -1,3 +1,3 @@
 service_user: "authn"
 destination: "/home/{{ service_user }}/repo"
-#default_users_group: root
+default_users_group: root
