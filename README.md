@@ -37,4 +37,8 @@ ___
 - Group AuthN
 - Аdded a Flask framework for processing requests
 ___
+### Home Work 20-22
+- Group AuthN
+- Added Ansible playbook
+___
 

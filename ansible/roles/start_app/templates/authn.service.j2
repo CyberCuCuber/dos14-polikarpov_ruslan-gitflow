@@ -1,0 +1,13 @@
+[Unit]
+Description=flask_authn.service
+After=network.target
+
+[Service]
+User=authn
+Restart=on-failure
+RestartSec=10
+WorkingDirectory=/home/authn/repo
+ExecStart=/bin/bash -c "poetry run flask --app main.py run"
+
+[Install]
+WantedBy=multi-user.target
