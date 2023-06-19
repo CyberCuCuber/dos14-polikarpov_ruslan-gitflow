@@ -1,0 +1,16 @@
+- name: Clone repo with service
+  git: 
+    repo: "{{ git_repo_link }}"
+    dest: "{{ destination }}"
+    version: master
+    force: yes
+
+- name: Install depencies
+  ansible.builtin.shell:
+    chdir: "{{ destination }}"
+    cmd: poetry install
+  args:
+    executable: /bin/bash
+  changed_when: false
+  
+ 
