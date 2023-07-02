@@ -1,2 +1,2 @@
 docker_apt_key: "https://download.docker.com/linux/ubuntu/gpg"
-docker_apt_repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu jammy stablex"
+docker_apt_repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu jammy stable"

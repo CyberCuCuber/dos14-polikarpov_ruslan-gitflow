@@ -1,5 +1,15 @@
 #/roles/docker/tasks
 
+- name: Install depencies
+  ansible.builtin.apt:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - apt-transport-https
+    - ca-certificates
+    - curl
+    - software-properties-common
+
 - name: Add GPG Docker key
   apt_key:
     url: "{{ docker_apt_key }}"
@@ -14,16 +24,6 @@
   become: true
   apt:
     update_cache: yes
-
-- name: Install depencies
-  ansible.builtin.apt:
-    name: "{{ item }}"
-    state: present
-  loop:
-    - apt-transport-https
-    - ca-certificates
-    - curl
-    - software-properties-common
 
 - name: Install docker
   ansible.builtin.apt:
