@@ -1,4 +1,5 @@
 ungrouped:
   hosts:
-    34.118.94.207:
+    192.168.31.149:
       ansible_common_remote_group: "{{ default_users_group }}"
+      

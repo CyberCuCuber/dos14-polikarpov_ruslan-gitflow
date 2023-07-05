@@ -17,3 +17,5 @@
     - role: start_app
       become_user: root
       become: true
+    - role: docker
+      become: true
