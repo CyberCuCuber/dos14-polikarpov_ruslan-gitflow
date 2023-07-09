@@ -1,5 +1,4 @@
 #/roles/docker/tasks
-
 - name: Install depencies
   ansible.builtin.apt:
     name: "{{ item }}"
@@ -24,6 +23,7 @@
   become: true
   apt:
     update_cache: yes
+    force_apt_get: yes
 
 - name: Install docker
   ansible.builtin.apt:

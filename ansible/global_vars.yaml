@@ -1,3 +1,2 @@
-service_user: "authn"
-destination: "/home/{{ service_user }}/repo"
-default_users_group: root
+destination: "/home/authn/repo"
+git_repo_link: "http://github.com/CyberCuCuber/dos14-polikarpov_ruslan-gitflow.git"

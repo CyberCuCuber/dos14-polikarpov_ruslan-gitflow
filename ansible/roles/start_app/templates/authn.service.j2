@@ -3,11 +3,12 @@ Description=flask_authn.service
 After=network.target
 
 [Service]
-User=authn
+User=root
 Restart=on-failure
 RestartSec=10
 WorkingDirectory=/home/authn/repo
-ExecStart=/bin/bash -c "poetry run flask --app main.py run"
+ExecStart=/bin/bash -c "docker-compose up"
+ExecStop=/bin/bash -c "docker-compose down"
 
 [Install]
 WantedBy=multi-user.target
