@@ -1,0 +1,13 @@
+- name: Create dir to app
+  ansible.builtin.file:
+    path: "{{ destination }}"
+    state: directory
+    recurse: yes
+    mode: 0755
+
+- name: Clone repo from git  
+  git:
+    repo: "{{ git_repo_link }}"
+    dest: "{{ destination }}"
+    version: feature-hw-25
+    force: yes
