@@ -438,4 +438,4 @@ def health_check():
     response.status = 200
     return response
 
-app.run()
+app.run(host="0.0.0.0")

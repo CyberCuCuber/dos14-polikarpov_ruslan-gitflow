@@ -5,7 +5,7 @@ services:
     image: cybercucumber/authn_service:latest
     ports:
       - 5000:5000
-  
+
   nginx:
     container_name: nginx
     build:
