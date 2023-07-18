@@ -33,7 +33,7 @@ def get_token(valid_flag=True):
 		return {"token": failed_token}
 	
 def get_identity(valid_flag="valid"):
-	valid_id = 14
+	valid_id = 16
 	valid_login = "kukurelik"
 	valid_pass = "123qweasdQWSEASD"
 	failed_id = "1"
