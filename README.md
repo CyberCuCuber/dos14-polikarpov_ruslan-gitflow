@@ -45,4 +45,10 @@ ___
 - Group AuthN
 - Added installing docker and docker-compose with Ansible
 ___
-
+### Home Works 24-26
+- Group AuthN
+- Authn servise added to Docker container
+- Docker container pushed to docker-hub
+- Created file for docker-compose to run authn service in docker container
+- Rewritten ansible roles to run the application via docker-compose
+- 
