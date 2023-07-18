@@ -9,5 +9,5 @@
   git:
     repo: "{{ git_repo_link }}"
     dest: "{{ destination }}"
-    version: feature-hw-25
+    version: features-hw-24-26
     force: yes
