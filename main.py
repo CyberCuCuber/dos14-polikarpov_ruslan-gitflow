@@ -434,7 +434,7 @@ def app_register_user():
 
 @app.route("/api/v1/authn/health_check", methods=["GET"])
 def health_check():
-    response = make_response()
+    response = make_response({"health": "ok"})
     response.status = 200
     return response
 
