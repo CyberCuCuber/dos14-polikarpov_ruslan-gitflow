@@ -4,5 +4,14 @@ services:
   authn_service:
     image: cybercucumber/authn_service:latest
     ports:
-      - "80:5000"
+      - 5000:5000
 
+  nginx:
+    container_name: nginx
+    build:
+      context: .
+      dockerfile: Dockerfile.nginx
+    depends_on:
+      - authn_service
+    ports:
+      - 80:80
