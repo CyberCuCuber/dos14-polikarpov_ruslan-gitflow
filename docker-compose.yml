@@ -3,8 +3,6 @@ version: "3.4"
 services:
   authn_service:
     image: cybercucumber/authn_service:latest
-#    ports:
-#      - 5000:5000
 
   nginx:
     container_name: nginx
