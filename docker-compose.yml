@@ -13,3 +13,5 @@ services:
       - authn_service
     ports:
       - 80:80
+    volumes:
+      - /home/authn/repo/nginx-logs:/var/log/nginx
