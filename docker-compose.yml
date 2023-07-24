@@ -1,0 +1,17 @@
+version: "3.4"
+
+services:
+  authn_service:
+    image: cybercucumber/authn_service:latest
+
+  nginx:
+    container_name: nginx
+    build:
+      context: .
+      dockerfile: Dockerfile.nginx
+    depends_on:
+      - authn_service
+    ports:
+      - 80:80
+    volumes:
+      - /home/authn/repo/nginx-logs:/var/log/nginx
