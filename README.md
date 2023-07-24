@@ -41,4 +41,19 @@ ___
 - Group AuthN
 - Added Ansible playbook
 ___
-
+### Home Work 23
+- Group AuthN
+- Added installing docker and docker-compose with Ansible
+___
+### Home Works 24-26
+- Group AuthN
+- Authn servise added to Docker container
+- Docker container pushed to docker-hub
+- Created file for docker-compose to run authn service in docker container
+- Rewritten ansible roles to run the application via docker-compose
+- Added health check link to service
+- Added NGINX web-server
+- The webserver has been linked to the authn service
+- Added logging requests to the web server to json
+- Added a test_service.py file to test the operation of the service (full testing of the functions will be done later, only valid requests for now). The use of the script is described in the readme.txt file in the "tests/" directory
+___

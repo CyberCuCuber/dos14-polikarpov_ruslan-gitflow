@@ -432,5 +432,10 @@ def app_register_user():
         response.status = 403
     return response
 
+@app.route("/api/v1/authn/health_check", methods=["GET"])
+def health_check():
+    response = make_response({"health": "ok"})
+    response.status = 200
+    return response
 
-app.run()
+app.run(host="0.0.0.0")
