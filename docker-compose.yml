@@ -5,9 +5,9 @@ services:
       container_name: pg_db
       image: postgres:15-bullseye
       environment:
-        - POSTGRESS_DB: "authn"
-        - POSTGRESS_USER: "authn"
-        - POSTGRESS_PASSWORD: "1234qwer"
+        POSTGRES_DB: "authn"
+        POSTGRES_USER: "authn"
+        POSTGRES_PASSWORD: "1234qwer"
       ports:
         - "5432:5432"
       volumes:
