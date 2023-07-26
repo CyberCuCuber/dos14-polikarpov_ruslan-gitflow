@@ -1,6 +1,18 @@
 version: "3.4"
 
 services:
+  pg_db:
+      container_name: pg_db
+      image: postgres:15-bullseye
+      environment:
+        - POSTGRESS_DB: "authn"
+        - POSTGRESS_USER: "authn"
+        - POSTGRESS_PASSWORD: "1234qwer"
+      ports:
+        - "5432:5432"
+      volumes:
+        - /home/authn/repo/db_data:/var/lib/postgresql/data
+
   authn_service:
     image: cybercucumber/authn_service:latest
 
@@ -15,3 +27,4 @@ services:
       - 80:80
     volumes:
       - /home/authn/repo/nginx-logs:/var/log/nginx
+  

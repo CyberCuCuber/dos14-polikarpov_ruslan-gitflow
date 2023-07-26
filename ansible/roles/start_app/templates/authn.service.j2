@@ -7,7 +7,7 @@ User=root
 Restart=on-failure
 RestartSec=10
 WorkingDirectory=/home/authn/repo
-ExecStart=/bin/bash -c "docker-compose up"
+ExecStart=/bin/bash -c "docker-compose build && docker-compose up"
 ExecStop=/bin/bash -c "docker-compose down"
 
 [Install]

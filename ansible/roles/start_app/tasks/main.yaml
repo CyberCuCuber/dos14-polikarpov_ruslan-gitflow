@@ -1,12 +1,12 @@
 - name: Create service
   block:
-    - name: create service
+    - name: create a service
       ansible.builtin.template:
         src: authn.service.j2
         dest: "/etc/systemd/system/{{ service_name }}"
         owner: root
         group: root
         mode: '0755'
-  notify: 
-    - run service
-    - check service run status
+          notify:
+          - run service
+          - check service run status
