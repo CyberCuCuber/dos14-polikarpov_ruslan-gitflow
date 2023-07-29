@@ -1,10 +1,18 @@
 from datetime import datetime, timedelta
 from flask import Flask, request, make_response
+from os import environ
+from sqlalchemy import create_engine, Column, String, Integer
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.ext.declarative import declarative_base
+
 import hashlib
 import yaml
 import jwt
 import base64
 
+
+ENGINE = create_engine(f"postgresql://{environ.get(DB_USER)}:{environ.get(DB_PASS)}@{environ.get(DB_LOC)}:{environ.get(DB_PORT)}/{environ.get(DB_TABLE)}")
 
 class Error(Exception):
     """Base user exception class"""
@@ -24,6 +32,45 @@ class InaccessibleID(Error):
 class WrongToken(Error):
     """Wrong token exception"""
     pass
+
+
+class Broken_session_DB(Error):
+    """Failed session exeption"""
+    pass
+
+
+Base = declarative_base()
+
+class UserDB(Base):
+    __tablename__ = "authn"
+
+    client_id = Column(Integer, primary_key=True, nullable=False)
+    login = Column(String, unique=True, nullable=False)
+    password = Column(String, nullable=False)
+
+    def __repr__(self):
+        return f"<User {self.client_id} - {self.login}>"
+    
+    @classmethod
+    def create_session(cls):
+        Session = sessionmaker(bind=ENGINE)
+        return Session()
+
+    @classmethod
+    def add_user(cls, client_id, login, password):
+        user = cls(client_id=client_id, login=login, password=password)
+        session = cls.create_session()
+        session.add(user)
+        #try to commit new user
+        try:
+            session.commit()
+        except IntegrityError as ie:
+            session.rollback()
+            raise Broken_session_DB
+        finally:
+            session.close()
+
+Base.metadata.create_all(ENGINE)
 
 
 class StringValidation:
@@ -167,6 +214,10 @@ class Users:
         }]
         with open("logins_sha.yaml", "a") as yaml_file:
             yaml.dump(user_data, yaml_file)
+        try:
+            UserDB.add_user(client_id=client_id, login=login, password=passwd_obj.passwd) 
+        except Broken_session_DB:
+            print(f"write-session to DB with user {login} failed")
         self.__users_id_login[client_id] = login
 
     @property
@@ -397,6 +448,12 @@ def app_token_validate():
         response = make_response({
             "status": "error",
             "message": "unknown token"
+        })
+        response.status = 403
+    except jwt.exceptions.DecodeError:
+        response = make_response({
+            "status": "error",
+            "message": "token isn't jwt"
         })
         response.status = 403
     return response

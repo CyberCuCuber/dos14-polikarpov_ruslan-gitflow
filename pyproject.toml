@@ -10,6 +10,8 @@ python = "^3.11"
 PyYAML = "^6.0"
 flask = "^2.3.2"
 PyJWT = "^2.7.0"
+sqlalchemy = "^2.0"
+psycopg2-binary = "^2.9"
 
 [tool.poetry.group.dev]
 optional = true

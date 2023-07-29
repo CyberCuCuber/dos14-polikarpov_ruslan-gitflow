@@ -26,7 +26,8 @@ def get_login(valid_flag="valid"):
 
 def get_token(valid_flag=True):
 	valid_token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjbGllbnRfaWQiOjF9.lXok-0xnfq74L5lwEifZXPi1I8AUoXddNHzcM3j7peE"
-	failed_token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.yeJjbGllbnRfaWQiOjJ9.p9roKALE6p0eGFzcc1DlO-ei7NrSZee1jxH9j75jZc8"
+	#failed_token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.yeJjbGllbnRfaWQiOjJ9.p9roKALE6p0eGFzcc1DlO-ei7NrSZee1jxH9j75jZc8"
+	failed_token = "123123123"
 	if valid_flag:
 		return {"token": valid_token}
 	else:
@@ -72,6 +73,8 @@ def check_links():
 	print(request("post", get_login(), LOGIN))
 	print("---Checking validate---")
 	print(request("get", get_token(), VALIDATE))
+	print("---Check failed tocken---")
+	print(request("get", get_token(valid_flag=False), VALIDATE))
 	print("---Checking identity---")
 	print(request("put", get_identity(), IDENTITY))
 	
