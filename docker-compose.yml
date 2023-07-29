@@ -6,8 +6,8 @@ services:
       image: postgres:15-bullseye
       environment:
         POSTGRES_DB: "authn"
-        POSTGRES_USER: ${pg_user}
-        POSTGRES_PASSWORD: ${pg_pass}
+        POSTGRES_USER: ${DB_USER}
+        POSTGRES_PASSWORD: ${DB_PASS}
       ports:
         - "5432:5432"
       volumes:
@@ -20,11 +20,11 @@ services:
       context: .
       dockerfile: Dockerfile
     environment:
-      DB_USER: ${pg_user}
-      DB_PASS: ${pg_pass}
+      DB_USER: ${DB_USER}
+      DB_PASS: ${DB_PASS}
       DB_LOC: "pg_db"
       DB_PORT: "5432"
-      DB_TABLE: "authn"
+      DB_TABLE: "authn_users"
 
   nginx:
     container_name: nginx
@@ -37,5 +37,3 @@ services:
       - 80:80
     volumes:
       - /home/authn/repo/nginx-logs:/var/log/nginx
-secrets:
-  - ./ansible/roles/decrypt/secret.yaml  
