@@ -1,2 +1,0 @@
-- name: Decrypt passwd and username to db
-  ansible.builtin.shell: ansible-vault decrypt secret.yaml

@@ -9,6 +9,5 @@
       become: true
     - role: clone-git-repo
       become: true
-    - role: decrypt
     - role: start_app
       become: true
