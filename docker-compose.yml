@@ -2,8 +2,11 @@ version: "3.4"
 
 services:
   authn_service:
-    image: cybercucumber/authn_service:latest
-
+    #image: cybercucumber/authn_service:latest
+    container_name: py_service
+    build:
+      context: .
+      dockerfile: Dockerfile
   nginx:
     container_name: nginx
     build:
