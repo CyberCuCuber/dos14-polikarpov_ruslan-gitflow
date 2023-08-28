@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from flask import Flask, request, make_response
 from os import environ
-from sqlalchemy import create_engine, Column, String, Integer
+from sqlalchemy import create_engine, Column, String, Integer, Boolean
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.declarative import declarative_base
@@ -47,6 +47,7 @@ class UserDB(Base):
     client_id = Column(Integer, primary_key=True, nullable=False)
     login = Column(String, unique=True, nullable=False)
     password = Column(String, nullable=False)
+    block = Column(Boolean, unique=False)
 
     def __repr__(self):
         return f"<User {self.client_id} - {self.login}>"
@@ -58,7 +59,7 @@ class UserDB(Base):
 
     @classmethod
     def add_user(cls, client_id, login, password):
-        user = cls(client_id=client_id, login=login, password=password)
+        user = cls(client_id=client_id, login=login, password=password, block=False)
         session = cls.create_session()
         session.add(user)
         #try to commit new user
@@ -69,6 +70,16 @@ class UserDB(Base):
             raise Broken_session_DB
         finally:
             session.close()
+    
+    @classmethod
+    def get_all_users(cls):
+        session = cls.create_session()
+        users = session.query(UserDB).all()
+        users_dict = {}
+        for us in users:
+            users_dict[f"{us.client_id}"] = [us.login, us.password, us.block]
+        session.close()
+        return users_dict
 
 Base.metadata.create_all(ENGINE)
 
@@ -494,5 +505,12 @@ def health_check():
     response = make_response({"health": "ok"})
     response.status = 200
     return response
+
+@app.route("/api/v1/authn/get_all", methods=["GET"])
+def get_all_users():
+    response_dict = UserDB.get_all_users()
+    resp  = make_response(response_dict)
+    resp.status = 200
+    return resp
 
 app.run(host="0.0.0.0")
