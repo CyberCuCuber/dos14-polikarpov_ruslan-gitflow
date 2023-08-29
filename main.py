@@ -71,6 +71,7 @@ class UserDB(Base):
         finally:
             session.close()
     
+    #only for test
     @classmethod
     def get_all_users(cls):
         session = cls.create_session()
@@ -80,6 +81,33 @@ class UserDB(Base):
             users_dict[f"{us.client_id}"] = [us.login, us.password, us.block]
         session.close()
         return users_dict
+    
+    @classmethod
+    def get_user_by_login(cls, login):
+        session = cls.create_session()
+        user = session.query(UserDB).filter(UserDB.login == login).first()
+        user_dict = {
+            "client_id": user.client_id,
+            "login": user.login,
+            "password": user.password,
+            "block": user.block
+        }
+        session.close()
+        return user_dict
+    
+    @classmethod
+    def block(cls, login, block_flag=True):
+        session = cls.create_session()
+        user = session.query(UserDB).filter(UserDB.login == login).first()
+        user.block = block_flag
+        try:
+            session.commit()
+            return True
+        except IntegrityError as ie:
+            session.rollback()
+            return False
+        finally:
+            session.close()
 
 Base.metadata.create_all(ENGINE)
 
@@ -132,14 +160,16 @@ class Password(StringValidation):
     Child class from StringValidation
     """
 
-    def __init__(self, password=None):
+    def __init__(self, password=None, sha=False):
         """
         Validate user password
         :param password: password string
         """
         super().__init__(password)
-        if password is not None and self.check_length() and self.check_numbers() and self.check_upper_lower():
+        if password is not None and self.check_length() and self.check_numbers() and self.check_upper_lower() and not sha:
             self.__password = hashlib.sha512(password.encode()).hexdigest()
+        elif sha and password is not None:
+            self.__password = password
         else:
             self.__password = None
 
@@ -185,7 +215,14 @@ class Users:
         self.__users = {}
         self.__users_id_login = {}
         self.users_yaml = users_yaml
+        self.init_db()
         self.read_yaml()
+
+    def init_db(self):
+        users = UserDB.get_all_users()
+        for user in users:
+            password_obj = self.validate_passwd(user["password"])
+            self.__users[user.login] = User(user.login, password_obj, user.client_id)
 
     def read_yaml(self):
         """
@@ -196,9 +233,10 @@ class Users:
             yml = yaml.load(file, Loader=yaml.FullLoader)
             for types in yml:
                 for user in yml[types]:
-                    passwort_obj = self.validate_passwd(user["password"])
-                    if passwort_obj.passwd is not None:
-                        self.add_user(user["login"], passwort_obj, user["client_id"])
+                    if user["login"] not in self.__users.keys():
+                        passwort_obj = self.validate_passwd(user["password"])
+                        if passwort_obj.passwd is not None:
+                            self.add_user(user["login"], passwort_obj, user["client_id"])
 
     @staticmethod
     def validate_passwd(password):
@@ -336,12 +374,14 @@ class User:
         :return:
         """
         self.__blocked = inf
+        us = UserDB.block(self.__login)
         self.__block_time = datetime.now() + timedelta(minutes=2)
 
     @block.deleter
     def block(self):
         self.__blocked = False
         self.__block_time = None
+        us = UserDB.block(self.__login, False)
         del self.failure
 
     @failure.deleter
@@ -506,6 +546,7 @@ def health_check():
     response.status = 200
     return response
 
+#test_feature
 @app.route("/api/v1/authn/get_all", methods=["GET"])
 def get_all_users():
     response_dict = UserDB.get_all_users()
