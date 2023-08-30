@@ -78,7 +78,12 @@ class UserDB(Base):
         users = session.query(UserDB).all()
         users_dict = {}
         for us in users:
-            users_dict[f"{us.client_id}"] = [us.login, us.password, us.block]
+            us_dict = {
+                "login": str(us.login),
+                "password": str(us.password),
+                "block": str(us.block)
+            }
+            users_dict[f"{us.client_id}"] = us_dict
         session.close()
         return users_dict
     
@@ -96,7 +101,7 @@ class UserDB(Base):
         return user_dict
     
     @classmethod
-    def block(cls, login, block_flag=True):
+    def blocking(cls, login, block_flag=True):
         session = cls.create_session()
         user = session.query(UserDB).filter(UserDB.login == login).first()
         user.block = block_flag
@@ -220,9 +225,10 @@ class Users:
 
     def init_db(self):
         users = UserDB.get_all_users()
-        for user in users:
-            password_obj = self.validate_passwd(user["password"])
-            self.__users[user.login] = User(user.login, password_obj, user.client_id)
+        for user_id in users:
+            us = users[user_id]
+            password_obj = self.validate_passwd(us["password"], True)
+            self.__users[us["login"]] = User(us["login"], password_obj, user_id)
 
     def read_yaml(self):
         """
@@ -239,13 +245,13 @@ class Users:
                             self.add_user(user["login"], passwort_obj, user["client_id"])
 
     @staticmethod
-    def validate_passwd(password):
+    def validate_passwd(password, sha=False):
         """
         Static valid password in sha512
         :param password: password
         :return: Valid password obj
         """
-        return Password(password)
+        return Password(password, sha)
 
     def add_user(self, login, passwd_obj, client_id):
         """
@@ -374,14 +380,14 @@ class User:
         :return:
         """
         self.__blocked = inf
-        us = UserDB.block(self.__login)
+        us = UserDB.blocking(self.__login)
         self.__block_time = datetime.now() + timedelta(minutes=2)
 
     @block.deleter
     def block(self):
         self.__blocked = False
         self.__block_time = None
-        us = UserDB.block(self.__login, False)
+        us = UserDB.blocking(self.__login, False)
         del self.failure
 
     @failure.deleter
