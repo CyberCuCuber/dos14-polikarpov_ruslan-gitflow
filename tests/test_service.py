@@ -6,7 +6,6 @@ LOGIN = f"{HOST}api/v1/identity/login"
 VALIDATE = f"{HOST}api/v1/identity/validate"
 IDENTITY = f"{HOST}api/v1/identity"
 HEALTH = f"{HOST}api/v1/authn/health_check"
-ALL = f"{HOST}api/v1/authn/get_all"
 
 def get_login(valid_flag="valid"):
 	valid_login = "optimistic_bohr"
@@ -78,8 +77,6 @@ def check_links():
 	print(request("get", get_token(valid_flag=False), VALIDATE))
 	print("---Checking identity---")
 	print(request("put", get_identity(), IDENTITY))
-	print("---Checking get from db---")
-	print(request("get", {}, ALL))
 
 
 if __name__ == "__main__":

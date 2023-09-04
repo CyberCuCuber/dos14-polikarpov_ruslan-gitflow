@@ -71,7 +71,6 @@ class UserDB(Base):
         finally:
             session.close()
     
-    #only for test
     @classmethod
     def get_all_users(cls):
         session = cls.create_session()
@@ -551,13 +550,5 @@ def health_check():
     response = make_response({"health": "ok"})
     response.status = 200
     return response
-
-#test_feature
-@app.route("/api/v1/authn/get_all", methods=["GET"])
-def get_all_users():
-    response_dict = UserDB.get_all_users()
-    resp  = make_response(response_dict)
-    resp.status = 200
-    return resp
 
 app.run(host="0.0.0.0")
