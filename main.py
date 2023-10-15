@@ -12,34 +12,43 @@ import jwt
 import base64
 
 
-ENGINE = create_engine(f"postgresql://{environ.get('DB_USER')}:{environ.get('DB_PASS')}@{environ.get('DB_LOC')}:{environ.get('DB_PORT')}/{environ.get('DB_NAME')}")
+ENGINE = create_engine(
+    f"postgresql://{environ.get('DB_USER')}:{environ.get('DB_PASS')}@{environ.get('DB_LOC')}:{environ.get('DB_PORT')}/{environ.get('DB_NAME')}"
+)
+
 
 class Error(Exception):
     """Base user exception class"""
+
     pass
 
 
 class WeakPassword(Error):
     """Wrong password exception"""
+
     pass
 
 
 class InaccessibleID(Error):
     """Inaccessible ID exception"""
+
     pass
 
 
 class WrongToken(Error):
     """Wrong token exception"""
+
     pass
 
 
 class Broken_session_DB(Error):
     """Failed session exeption"""
+
     pass
 
 
 Base = declarative_base()
+
 
 class UserDB(Base):
     __tablename__ = "authn"
@@ -51,7 +60,7 @@ class UserDB(Base):
 
     def __repr__(self):
         return f"<User {self.client_id} - {self.login}>"
-    
+
     @classmethod
     def create_session(cls):
         Session = sessionmaker(bind=ENGINE)
@@ -62,7 +71,7 @@ class UserDB(Base):
         user = cls(client_id=client_id, login=login, password=password, block=False)
         session = cls.create_session()
         session.add(user)
-        #try to commit new user
+        # try to commit new user
         try:
             session.commit()
         except IntegrityError as ie:
@@ -70,7 +79,7 @@ class UserDB(Base):
             raise Broken_session_DB
         finally:
             session.close()
-    
+
     @classmethod
     def get_all_users(cls):
         session = cls.create_session()
@@ -80,12 +89,12 @@ class UserDB(Base):
             us_dict = {
                 "login": str(us.login),
                 "password": str(us.password),
-                "block": str(us.block)
+                "block": str(us.block),
             }
             users_dict[f"{us.client_id}"] = us_dict
         session.close()
         return users_dict
-    
+
     @classmethod
     def get_user_by_login(cls, login):
         session = cls.create_session()
@@ -94,11 +103,11 @@ class UserDB(Base):
             "client_id": user.client_id,
             "login": user.login,
             "password": user.password,
-            "block": user.block
+            "block": user.block,
         }
         session.close()
         return user_dict
-    
+
     @classmethod
     def blocking(cls, login, block_flag=True):
         session = cls.create_session()
@@ -112,6 +121,7 @@ class UserDB(Base):
             return False
         finally:
             session.close()
+
 
 Base.metadata.create_all(ENGINE)
 
@@ -170,7 +180,13 @@ class Password(StringValidation):
         :param password: password string
         """
         super().__init__(password)
-        if password is not None and self.check_length() and self.check_numbers() and self.check_upper_lower() and not sha:
+        if (
+            password is not None
+            and self.check_length()
+            and self.check_numbers()
+            and self.check_upper_lower()
+            and not sha
+        ):
             self.__password = hashlib.sha512(password.encode()).hexdigest()
         elif sha and password is not None:
             self.__password = password
@@ -183,7 +199,7 @@ class Password(StringValidation):
 
     @property
     def key(self):
-        return b'MXEydzNlNHI1dFQlUiRFI1dAUSE='
+        return b"MXEydzNlNHI1dFQlUiRFI1dAUSE="
 
     @classmethod
     def __verify_obj(cls, other):
@@ -241,7 +257,9 @@ class Users:
                     if user["login"] not in self.__users.keys():
                         passwort_obj = self.validate_passwd(user["password"])
                         if passwort_obj.passwd is not None:
-                            self.add_user(user["login"], passwort_obj, user["client_id"])
+                            self.add_user(
+                                user["login"], passwort_obj, user["client_id"]
+                            )
 
     @staticmethod
     def validate_passwd(password, sha=False):
@@ -261,15 +279,13 @@ class Users:
         :return: None
         """
         self.__users[login] = User(login, passwd_obj, client_id)
-        user_data = [{
-            "id": client_id,
-            "login": login,
-            "password": passwd_obj.passwd
-        }]
+        user_data = [{"id": client_id, "login": login, "password": passwd_obj.passwd}]
         with open("logins_sha.yaml", "a") as yaml_file:
             yaml.dump(user_data, yaml_file)
         try:
-            UserDB.add_user(client_id=client_id, login=login, password=passwd_obj.passwd) 
+            UserDB.add_user(
+                client_id=client_id, login=login, password=passwd_obj.passwd
+            )
         except Broken_session_DB:
             print(f"write-session to DB with user {login} failed")
         self.__users_id_login[client_id] = login
@@ -308,7 +324,9 @@ class Users:
         :param token: JWT-token
         :return: exception - wrong token, client id - success
         """
-        token_id = jwt.decode(token, base64.b64decode(Password().key).decode(), algorithms=["HS256"])["client_id"]
+        token_id = jwt.decode(
+            token, base64.b64decode(Password().key).decode(), algorithms=["HS256"]
+        )["client_id"]
         if self.check_id(token_id):
             return token_id
         else:
@@ -424,7 +442,11 @@ class User:
         Makes JWT with client id payload
         :return: JWT
         """
-        return jwt.encode({"client_id": self.user_id}, base64.b64decode(self.passwd.key).decode(), algorithm="HS256")
+        return jwt.encode(
+            {"client_id": self.user_id},
+            base64.b64decode(self.passwd.key).decode(),
+            algorithm="HS256",
+        )
 
     def login_attempt(self, input_password_obj):
         """
@@ -468,16 +490,14 @@ def app_login():
             response = make_response({"token": resp})
             response.status = 200
         else:
-            response = make_response({
-                "status": "error",
-                "message": "login or password incorrect"
-            })
+            response = make_response(
+                {"status": "error", "message": "login or password incorrect"}
+            )
             response.status = 403
     except KeyError:
-        response = make_response({
-            "status": "error",
-            "message": "required keys are missing"
-        })
+        response = make_response(
+            {"status": "error", "message": "required keys are missing"}
+        )
         response.status = 403
     return response
 
@@ -495,22 +515,15 @@ def app_token_validate():
         response = make_response({"client_id": resp})
         response.status = 200
     except KeyError:
-        response = make_response({
-            "status": "error",
-            "message": "required keys are missing"
-        })
+        response = make_response(
+            {"status": "error", "message": "required keys are missing"}
+        )
         response.status = 403
     except WrongToken:
-        response = make_response({
-            "status": "error",
-            "message": "unknown token"
-        })
+        response = make_response({"status": "error", "message": "unknown token"})
         response.status = 403
     except jwt.exceptions.DecodeError:
-        response = make_response({
-            "status": "error",
-            "message": "token isn't jwt"
-        })
+        response = make_response({"status": "error", "message": "token isn't jwt"})
         response.status = 403
     return response
 
@@ -524,9 +537,7 @@ def app_register_user():
     request_data = request.get_json()
     try:
         users.register_user(
-            request_data["client_id"],
-            request_data["login"],
-            request_data["password"]
+            request_data["client_id"], request_data["login"], request_data["password"]
         )
         message = {"status": "ok"}
         response = make_response(message)
@@ -540,15 +551,19 @@ def app_register_user():
         response = make_response({"status": "error", "message": message})
         response.status = 403
     except InaccessibleID:
-        message = f"login and password for client {request_data['client_id']} already exists"
+        message = (
+            f"login and password for client {request_data['client_id']} already exists"
+        )
         response = make_response({"status": "error", "message": message})
         response.status = 403
     return response
+
 
 @app.route("/api/v1/authn/health_check", methods=["GET"])
 def health_check():
     response = make_response({"health": "ok"})
     response.status = 200
     return response
+
 
 app.run(host="0.0.0.0")
