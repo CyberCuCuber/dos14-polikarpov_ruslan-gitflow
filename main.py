@@ -1,10 +1,18 @@
 from datetime import datetime, timedelta
 from flask import Flask, request, make_response
+from os import environ
+from sqlalchemy import create_engine, Column, String, Integer, Boolean
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.ext.declarative import declarative_base
+
 import hashlib
 import yaml
 import jwt
 import base64
 
+
+ENGINE = create_engine(f"postgresql://{environ.get('DB_USER')}:{environ.get('DB_PASS')}@{environ.get('DB_LOC')}:{environ.get('DB_PORT')}/{environ.get('DB_NAME')}")
 
 class Error(Exception):
     """Base user exception class"""
@@ -24,6 +32,88 @@ class InaccessibleID(Error):
 class WrongToken(Error):
     """Wrong token exception"""
     pass
+
+
+class Broken_session_DB(Error):
+    """Failed session exeption"""
+    pass
+
+
+Base = declarative_base()
+
+class UserDB(Base):
+    __tablename__ = "authn"
+
+    client_id = Column(Integer, primary_key=True, nullable=False)
+    login = Column(String, unique=True, nullable=False)
+    password = Column(String, nullable=False)
+    block = Column(Boolean, unique=False)
+
+    def __repr__(self):
+        return f"<User {self.client_id} - {self.login}>"
+    
+    @classmethod
+    def create_session(cls):
+        Session = sessionmaker(bind=ENGINE)
+        return Session()
+
+    @classmethod
+    def add_user(cls, client_id, login, password):
+        user = cls(client_id=client_id, login=login, password=password, block=False)
+        session = cls.create_session()
+        session.add(user)
+        #try to commit new user
+        try:
+            session.commit()
+        except IntegrityError as ie:
+            session.rollback()
+            raise Broken_session_DB
+        finally:
+            session.close()
+    
+    @classmethod
+    def get_all_users(cls):
+        session = cls.create_session()
+        users = session.query(UserDB).all()
+        users_dict = {}
+        for us in users:
+            us_dict = {
+                "login": str(us.login),
+                "password": str(us.password),
+                "block": str(us.block)
+            }
+            users_dict[f"{us.client_id}"] = us_dict
+        session.close()
+        return users_dict
+    
+    @classmethod
+    def get_user_by_login(cls, login):
+        session = cls.create_session()
+        user = session.query(UserDB).filter(UserDB.login == login).first()
+        user_dict = {
+            "client_id": user.client_id,
+            "login": user.login,
+            "password": user.password,
+            "block": user.block
+        }
+        session.close()
+        return user_dict
+    
+    @classmethod
+    def blocking(cls, login, block_flag=True):
+        session = cls.create_session()
+        user = session.query(UserDB).filter(UserDB.login == login).first()
+        user.block = block_flag
+        try:
+            session.commit()
+            return True
+        except IntegrityError as ie:
+            session.rollback()
+            return False
+        finally:
+            session.close()
+
+Base.metadata.create_all(ENGINE)
 
 
 class StringValidation:
@@ -74,14 +164,16 @@ class Password(StringValidation):
     Child class from StringValidation
     """
 
-    def __init__(self, password=None):
+    def __init__(self, password=None, sha=False):
         """
         Validate user password
         :param password: password string
         """
         super().__init__(password)
-        if password is not None and self.check_length() and self.check_numbers() and self.check_upper_lower():
+        if password is not None and self.check_length() and self.check_numbers() and self.check_upper_lower() and not sha:
             self.__password = hashlib.sha512(password.encode()).hexdigest()
+        elif sha and password is not None:
+            self.__password = password
         else:
             self.__password = None
 
@@ -127,7 +219,15 @@ class Users:
         self.__users = {}
         self.__users_id_login = {}
         self.users_yaml = users_yaml
+        self.init_db()
         self.read_yaml()
+
+    def init_db(self):
+        users = UserDB.get_all_users()
+        for user_id in users:
+            us = users[user_id]
+            password_obj = self.validate_passwd(us["password"], True)
+            self.__users[us["login"]] = User(us["login"], password_obj, user_id)
 
     def read_yaml(self):
         """
@@ -138,18 +238,19 @@ class Users:
             yml = yaml.load(file, Loader=yaml.FullLoader)
             for types in yml:
                 for user in yml[types]:
-                    passwort_obj = self.validate_passwd(user["password"])
-                    if passwort_obj.passwd is not None:
-                        self.add_user(user["login"], passwort_obj, user["client_id"])
+                    if user["login"] not in self.__users.keys():
+                        passwort_obj = self.validate_passwd(user["password"])
+                        if passwort_obj.passwd is not None:
+                            self.add_user(user["login"], passwort_obj, user["client_id"])
 
     @staticmethod
-    def validate_passwd(password):
+    def validate_passwd(password, sha=False):
         """
         Static valid password in sha512
         :param password: password
         :return: Valid password obj
         """
-        return Password(password)
+        return Password(password, sha)
 
     def add_user(self, login, passwd_obj, client_id):
         """
@@ -167,6 +268,10 @@ class Users:
         }]
         with open("logins_sha.yaml", "a") as yaml_file:
             yaml.dump(user_data, yaml_file)
+        try:
+            UserDB.add_user(client_id=client_id, login=login, password=passwd_obj.passwd) 
+        except Broken_session_DB:
+            print(f"write-session to DB with user {login} failed")
         self.__users_id_login[client_id] = login
 
     @property
@@ -274,12 +379,14 @@ class User:
         :return:
         """
         self.__blocked = inf
+        us = UserDB.blocking(self.__login)
         self.__block_time = datetime.now() + timedelta(minutes=2)
 
     @block.deleter
     def block(self):
         self.__blocked = False
         self.__block_time = None
+        us = UserDB.blocking(self.__login, False)
         del self.failure
 
     @failure.deleter
@@ -397,6 +504,12 @@ def app_token_validate():
         response = make_response({
             "status": "error",
             "message": "unknown token"
+        })
+        response.status = 403
+    except jwt.exceptions.DecodeError:
+        response = make_response({
+            "status": "error",
+            "message": "token isn't jwt"
         })
         response.status = 403
     return response
