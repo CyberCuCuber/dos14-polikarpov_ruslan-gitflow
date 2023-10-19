@@ -17,11 +17,11 @@ services:
         - /home/authn/repo/db_data:/var/lib/postgresql/data
 
   authn_service:
-    image: cybercucumber/authn_service:latest
-      #container_name: py_service
-      #build:
-      #context: .
-      #dockerfile: Dockerfile
+    #image: cybercucumber/authn_service:latest
+    container_name: py_service
+    build:
+      context: .
+      dockerfile: Dockerfile
     networks:
         authn_net:
           ipv4_address: 172.18.0.3
