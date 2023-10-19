@@ -1,21 +1,6 @@
 version: "3.4"
 
 services:
-  pg_db:
-      container_name: pg_db
-      image: postgres:15-bullseye
-      networks:
-        authn_net:
-          ipv4_address: 172.18.0.2
-      environment:
-        POSTGRES_DB: "authn"
-        POSTGRES_USER: ${DB_USER}
-        POSTGRES_PASSWORD: ${DB_PASS}
-      ports:
-        - "5432:5432"
-      volumes:
-        - /home/authn/repo/db_data:/var/lib/postgresql/data
-
   authn_service:
     #image: cybercucumber/authn_service:latest
     container_name: py_service
@@ -39,21 +24,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.nginx
-    networks:
-        authn_net:
-          ipv4_address: 172.18.0.4
     depends_on:
       - authn_service
-      - pg_db
     ports:
       - 80:80
     volumes:
       - /home/authn/repo/nginx-logs:/var/log/nginx
-
-networks:
-  authn_net:
-    driver: bridge
-    ipam:
-      config:
-        - subnet: 172.18.0.0/24
-          gateway: 172.18.0.1
