@@ -73,7 +73,7 @@ def check_links():
 	print(request("post", get_login(), LOGIN))
 	print("---Checking validate---")
 	print(request("get", get_token(), VALIDATE))
-	print("---Check failed tocken---")
+	print("---Check failed token---")
 	print(request("get", get_token(valid_flag=False), VALIDATE))
 	print("---Checking identity---")
 	print(request("put", get_identity(), IDENTITY))

@@ -13,7 +13,7 @@ import base64
 
 
 ENGINE = create_engine(
-    f"postgresql://{environ.get('DB_USER')}:{environ.get('DB_PASS')}@{environ.get('DB_LOC')}:{environ.get('DB_PORT')}/{environ.get('DB_NAME')}"
+    f"postgresql://{environ.get('DB_USER')}:{environ.get('DB_PASS')}@{environ.get('DB_LOC')}:{environ.get('DB_PORT')}/{environ.get('DB_NAME')}"     #postgresql://user:password@db_location:db_port/db_name
 )
 
 
@@ -128,7 +128,7 @@ Base.metadata.create_all(ENGINE)
 
 class StringValidation:
     """
-    Validation string
+    Validation string class
     """
 
     def __init__(self, string):

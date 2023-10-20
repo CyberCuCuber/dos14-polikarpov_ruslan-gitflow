@@ -8,7 +8,7 @@ services:
         authn_net:
           ipv4_address: 172.18.0.2
       environment:
-        POSTGRES_DB: "authn"
+        POSTGRES_DB: ${DB_NAME} 
         POSTGRES_USER: ${DB_USER}
         POSTGRES_PASSWORD: ${DB_PASS}
       ports:
@@ -17,20 +17,20 @@ services:
         - /home/authn/repo/db_data:/var/lib/postgresql/data
 
   authn_service:
-    image: cybercucumber/authn_service:latest
-      #container_name: py_service
-      #build:
-      #context: .
-      #dockerfile: Dockerfile
+    #image: cybercucumber/authn_service:latest
+    container_name: py_service
+    build:
+      context: .
+      dockerfile: Dockerfile
     networks:
         authn_net:
           ipv4_address: 172.18.0.3
     environment:
       DB_USER: ${DB_USER}
       DB_PASS: ${DB_PASS}
-      DB_LOC: "pg_db"
-      DB_PORT: "5432"
-      DB_NAME: "authn"
+      DB_LOC: ${DB_LOC}
+      DB_PORT: ${DB_PORT}
+      DB_NAME: ${DB_NAME}
     depends_on:
       - pg_db
 
