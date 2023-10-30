@@ -12,6 +12,7 @@ Environment=DB_USER=authn
 Environment=DB_LOC=pg_db
 Environment=DB_PORT=5432
 Environment=DB_NAME=authn
+Environment=JWT_KEY={{ db_pass }}
 ExecStart=/bin/bash -c "docker-compose up"
 ExecStop=/bin/bash -c "docker-compose down"
 
