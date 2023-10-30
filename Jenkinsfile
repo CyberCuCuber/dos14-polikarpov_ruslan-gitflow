@@ -33,6 +33,7 @@ pipeline {
           def image = docker.build "cybercucumber/authn_service:${env.GIT_COMMIT}"
           docker.withRegistry('','dockerhub-authn') {
             image.push()
+            image.push('latest')
           }
         }
       }

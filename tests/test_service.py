@@ -25,7 +25,7 @@ def get_login(valid_flag="valid"):
 			return {"password": failed_pass}
 
 def get_token(valid_flag=True):
-	valid_token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjbGllbnRfaWQiOiIxIn0.Xe7n_cOWmMZJ8j08c2C_M_5A3DCobSiO5P18DMQf0Vo"
+	valid_token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjbGllbnRfaWQiOiIxIn0.r4RVPHpZE0aWNQxjlGEetMHTltB-EJzORuK3zWdTp_I"
 	failed_token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjbGllbnRfaWQiOiIxIn0.Xe7n_cOWmMZJ8j08c2C_M_5A3DCobSiO5P18DMQf0Vo"
 	if valid_flag:
 		return {"token": valid_token}
@@ -36,7 +36,7 @@ def get_identity(valid_flag="valid"):
 	valid_id = 18
 	valid_login = "kurelikaaa"
 	valid_pass = "123qweasdQWSEASD"
-	failed_id = "1"
+	failed_id = "122"
 	failed_login = "optimistic_bohr"
 	failed_pass = "123asd"
 

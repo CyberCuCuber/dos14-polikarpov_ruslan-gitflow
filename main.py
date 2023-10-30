@@ -199,7 +199,8 @@ class Password(StringValidation):
 
     @property
     def key(self):
-        return b"MXEydzNlNHI1dFQlUiRFI1dAUSE="
+        key = environ.get('JWT_KEY')
+        return base64.b64encode(key.encode('utf-8'))
 
     @classmethod
     def __verify_obj(cls, other):
