@@ -1,0 +1,23 @@
+deployment:
+  name: authn
+  namespace: authn-namespace
+  bank: ivanoff
+  env: prd
+replicas: 2
+strategy:
+  type: RollingUpdate
+  maxSurge: 2
+web-server:
+  name: nginx
+  image: nginx:1.25.0
+  containerPort: 80
+  portName: http
+  protocol: TCP
+  volumeName: nginx-config
+  volumeMountPath: /etc/nginx
+app:
+  name: authn-app
+  image: cybercucumber/authn_service:latest
+  env: .env
+db_address: rds-ivanoff-tf.c0whq4jiugzq.eu-north-1.rds.amazonaws.com
+db_port: "5432"

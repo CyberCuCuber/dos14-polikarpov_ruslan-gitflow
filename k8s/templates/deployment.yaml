@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.deployment.name }}-deployment
+  namespace: {{ .Values.deployment.namespace }}
+  labels:
+    app: {{ .Values.deployment.name }}
+    bank: {{ .Values.deployment.bank }}
+    env: {{ .Values.deployment.env }}
+spec:
+  replicas: {{ .Values.replicas }}
+  selector:
+    matchLabels:
+      app: {{ .Values.name }}
+      bank: {{ .Values.deployment.bank }}
+      env: {{ .Values.deployment.env }}
+  strategy:
+    type: {{ .Values.strategy.type }}
+    rollingUpdate:
+      maxSurge: {{ .strategy.strategy.maxSurge }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.deployment.name }}
+        bank: {{ .Values.deployment.bank }}
+        env: {{ .Values.deployment.env }}
+    spec:
+      containers:
+      - name: {{ .Values.web-server.name }}
+        image: {{ .Values.web-server.image }}
+        ports:
+        - containerPort: {{ .Values.web-server.containerPort }}
+          name: {{ .Values.web-server.portName }}
+          protocol: {{ .Values.web-server.protocol }}
+        volumeMounts:
+          - name: {{ .Values.web-server.volumeName }}
+            mountPath: {{ .Values.web-server.volumeMountPath }}
+      - name: {{ .Values.app.name }}
+        image: {{ .Values.app.image }}
+        env:
+        - name: PG_NAME
+          value: authn
+        - name: PG_USER
+          valueFrom:
+            secretKeyRef:
+              key: username
+              name: ivanoff-db-creds
+        - name: PG_PASS
+          valueFrom:
+            secretKeyRef:
+              key: password
+              name: ivanoff-db-creds
+        - name: PG_LOC
+          value: rds-ivanoff-tf.c0whq4jiugzq.eu-north-1.rds.amazonaws.com
+        - name: PG_PORT
+          value: "5432"
+      volumes:
+      - configMap:
+          name: authn-nginx-config
+        name: nginx-config

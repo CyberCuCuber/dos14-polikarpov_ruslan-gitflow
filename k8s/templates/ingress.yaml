@@ -1,0 +1,27 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ingress-authn
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /$1
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    kubernetes.io/ingress.class: "nginx"
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: ivanoff.smodata.net
+    http:
+      paths:
+      - path: /authn(.*)
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: authn-svc
+            port:
+              number: 80
+  tls:
+    - hosts:
+      - ivanoff.smodata.net
+      secretName: ivanoff-tls
