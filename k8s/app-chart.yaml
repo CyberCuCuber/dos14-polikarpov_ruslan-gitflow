@@ -1,6 +1,0 @@
-apiVersion: v2
-name: authn
-description: authn service for ivanoff-bank.
-type: application
-version: 1.0.0
-appVersion: 1.0.1

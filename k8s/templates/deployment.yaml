@@ -1,60 +1,68 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ .Values.deployment.name }}-deployment
-  namespace: {{ .Values.deployment.namespace }}
+  name     : {{ .Values.general.name }}-deployment
+  namespace: {{ .Values.general.namespace }}
   labels:
-    app: {{ .Values.deployment.name }}
-    bank: {{ .Values.deployment.bank }}
-    env: {{ .Values.deployment.env }}
+    app : {{ .Values.general.labels.app }}
+    bank: {{ .Values.general.labels.bank }}
+    env : {{ .Values.general.labels.env }}
 spec:
-  replicas: {{ .Values.replicas }}
+  replicas: {{ .Values.deployment.replicas }}
   selector:
     matchLabels:
-      app: {{ .Values.name }}
-      bank: {{ .Values.deployment.bank }}
-      env: {{ .Values.deployment.env }}
+      app : {{ .Values.general.labels.app }}
+      bank: {{ .Values.general.labels.bank }}
+      env : {{ .Values.general.labels.env }}
   strategy:
-    type: {{ .Values.strategy.type }}
+    type: RollingUpdate
     rollingUpdate:
-      maxSurge: {{ .strategy.strategy.maxSurge }}
+      maxSurge: {{ .Values.deployment.strategy.maxSurge }}
   template:
     metadata:
       labels:
-        app: {{ .Values.deployment.name }}
-        bank: {{ .Values.deployment.bank }}
-        env: {{ .Values.deployment.env }}
+        app : {{ .Values.general.labels.app }}
+        bank: {{ .Values.general.labels.bank }}
+        env : {{ .Values.general.labels.env }}
     spec:
       containers:
-      - name: {{ .Values.web-server.name }}
-        image: {{ .Values.web-server.image }}
-        ports:
-        - containerPort: {{ .Values.web-server.containerPort }}
-          name: {{ .Values.web-server.portName }}
-          protocol: {{ .Values.web-server.protocol }}
-        volumeMounts:
-          - name: {{ .Values.web-server.volumeName }}
-            mountPath: {{ .Values.web-server.volumeMountPath }}
-      - name: {{ .Values.app.name }}
-        image: {{ .Values.app.image }}
-        env:
-        - name: PG_NAME
-          value: authn
-        - name: PG_USER
-          valueFrom:
-            secretKeyRef:
-              key: username
-              name: ivanoff-db-creds
-        - name: PG_PASS
-          valueFrom:
-            secretKeyRef:
-              key: password
-              name: ivanoff-db-creds
-        - name: PG_LOC
-          value: rds-ivanoff-tf.c0whq4jiugzq.eu-north-1.rds.amazonaws.com
-        - name: PG_PORT
-          value: "5432"
+        - name: {{ .Values.deployment.webserver.name }}
+          image: {{ .Values.deployment.webserver.image }}
+          ports:
+            - containerPort: {{ .Values.deployment.webserver.containerPort }}
+              name: {{ .Values.deployment.webserver.portName }}
+              protocol: {{ .Values.deployment.webserver.protocol }}
+          volumeMounts:
+            - name: {{ .Values.deployment.webserver.volumeName }}
+              mountPath: {{ .Values.deployment.webserver.volumeMountPath }}
+        - name: {{ .Values.deployment.app.name }}
+          image: {{ .Values.deployment.app.image }}
+          env:
+            - name: PG_NAME
+              valueFrom:
+                secretKeyRef:
+                  key: db-name
+                  name: authn-creds
+            - name: PG_USER
+              valueFrom:
+                secretKeyRef:
+                  key: db-user
+                  name: authn-creds
+            - name: PG_PASS
+              valueFrom:
+                secretKeyRef:
+                  key: db-password
+                  name: authn-creds
+            - name: PG_LOC
+              value: {{ .Values.deployment.db_address }}
+            - name: PG_PORT
+              value: {{ .Values.deployment.db_port }}
+            - name: JWT_KEY
+              valueFrom:
+                secretKeyRef:
+                  key: jwt-key
+                  name: authn-creds
       volumes:
-      - configMap:
-          name: authn-nginx-config
-        name: nginx-config
+        - configMap:
+            name: {{ .Values.name }}-{{ .Values.deployment.webserver.name }}-config
+          name: {{ .Values.deployment.webserver.name }}-config

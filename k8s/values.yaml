@@ -1,23 +1,45 @@
-deployment:
+general:
   name: authn
-  namespace: authn-namespace
-  bank: ivanoff
-  env: prd
-replicas: 2
-strategy:
-  type: RollingUpdate
-  maxSurge: 2
-web-server:
-  name: nginx
-  image: nginx:1.25.0
-  containerPort: 80
-  portName: http
+  namespace: ivanoff-bank
+  labels:
+    app: authn
+    bank: ivanoff
+    env: prod
+ingress:
+  ingressClassName: nginx
+  annotations: {
+      nginx.ingress.kubernetes.io/use-regex: "true",
+      nginx.ingress.kubernetes.io/rewrite-target: /$1,
+      nginx.ingress.kubernetes.io/service-upstream: "true",
+      cert-manager.io/cluster-issuer: "letsencrypt-prod",
+      kubernetes.io/ingress.class: "nginx"
+  }
+  host: ivanoff.smodata.net
+  secretCertName: ivanoff-tls
+  paths:
+    authn:
+      path: /authn(.*)
+      pathType: ImplementationSpecific
+      service_port: "80"
+service:
+  port: 80
+  targetPort: 80
   protocol: TCP
-  volumeName: nginx-config
-  volumeMountPath: /etc/nginx
-app:
-  name: authn-app
-  image: cybercucumber/authn_service:latest
-  env: .env
-db_address: rds-ivanoff-tf.c0whq4jiugzq.eu-north-1.rds.amazonaws.com
-db_port: "5432"
+deployment:
+  replicas: 2
+  strategy:
+    maxSurge: 2
+  webserver:
+    name: nginx
+    image: nginx:1.25.0
+    containerPort: 80
+    portName: http
+    protocol: TCP
+    volumeName: nginx-config
+    volumeMountPath: /etc/nginx
+  app:
+    name: authn-app
+    image: cybercucumber/authn_service:latest
+  db_address: omegabank-rds-tf.cearikylb8tb.eu-west-1.rds.amazonaws.com
+  db_port: "5432"
+
