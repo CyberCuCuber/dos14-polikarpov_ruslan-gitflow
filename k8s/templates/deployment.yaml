@@ -12,7 +12,7 @@ spec:
   selector:
     {{- with .Values.general.labels }}
     matchLabels:
-      {{- toYaml . | nindent 4 }}
+      {{- toYaml . | nindent 6 }}
     {{- end }}
   strategy:
     type: {{ .Values.deployment.strategy.type }}
@@ -22,7 +22,7 @@ spec:
     metadata:
       {{- with .Values.general.labels }}
       labels:
-        {{- toYaml . | nindent 4 }}
+        {{- toYaml . | nindent 8 }}
       {{- end }}
     spec:
       containers:
