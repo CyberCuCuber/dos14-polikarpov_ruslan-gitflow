@@ -1,10 +1,10 @@
 general:
-  name: authn
-  namespace: ivanoff-bank
-  labels:
-    app: authn
-    bank: ivanoff
-    env: prod
+  name: authn  
+  labels: {
+    app: "authn",
+    bank: "ivanoff",
+    env: "prod",
+  }
 ingress:
   ingressClassName: nginx
   annotations: {
@@ -25,9 +25,14 @@ service:
   port: 80
   targetPort: 80
   protocol: TCP
+serviceaccount:
+  create: true
+  automount: true
+  annotations: {}
 deployment:
   replicas: 2
   strategy:
+    type: RollingUpdate
     maxSurge: 2
   webserver:
     name: nginx

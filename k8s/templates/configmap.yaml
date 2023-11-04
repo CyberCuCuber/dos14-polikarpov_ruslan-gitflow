@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: {{ .Values.general.name }}-{{ .Values.deployment.webserver.name }}-config
-  namespace: {{ .Values.general.namespace }}
+  namespace: {{ .Release.Namespace }}
 data:
   nginx.conf: |-
     user nginx;

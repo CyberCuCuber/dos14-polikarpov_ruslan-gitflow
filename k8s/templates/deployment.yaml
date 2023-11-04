@@ -2,28 +2,28 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name     : {{ .Values.general.name }}-deployment
-  namespace: {{ .Values.general.namespace }}
+  namespace: {{ .Release.Namespace }}
+  {{- with .Values.general.labels }}
   labels:
-    app : {{ .Values.general.labels.app }}
-    bank: {{ .Values.general.labels.bank }}
-    env : {{ .Values.general.labels.env }}
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
 spec:
   replicas: {{ .Values.deployment.replicas }}
   selector:
+    {{- with .Values.general.labels }}
     matchLabels:
-      app : {{ .Values.general.labels.app }}
-      bank: {{ .Values.general.labels.bank }}
-      env : {{ .Values.general.labels.env }}
+      {{- toYaml . | nindent 4 }}
+    {{- end }}
   strategy:
-    type: RollingUpdate
+    type: {{ .Values.deployment.strategy.type }}
     rollingUpdate:
       maxSurge: {{ .Values.deployment.strategy.maxSurge }}
   template:
     metadata:
+      {{- with .Values.general.labels }}
       labels:
-        app : {{ .Values.general.labels.app }}
-        bank: {{ .Values.general.labels.bank }}
-        env : {{ .Values.general.labels.env }}
+        {{- toYaml . | nindent 4 }}
+      {{- end }}
     spec:
       containers:
         - name: {{ .Values.deployment.webserver.name }}
@@ -38,31 +38,31 @@ spec:
         - name: {{ .Values.deployment.app.name }}
           image: {{ .Values.deployment.app.image }}
           env:
-            - name: PG_NAME
+            - name: DB_NAME
               valueFrom:
                 secretKeyRef:
-                  key: db-name
-                  name: authn-creds
-            - name: PG_USER
+                  key: dbname
+                  name: authn-sec
+            - name: DB_USER
               valueFrom:
                 secretKeyRef:
-                  key: db-user
-                  name: authn-creds
-            - name: PG_PASS
+                  key: dbuser
+                  name: authn-sec
+            - name: DB_PASS
               valueFrom:
                 secretKeyRef:
-                  key: db-password
-                  name: authn-creds
-            - name: PG_LOC
+                  key: dbpass
+                  name: authn-sec
+            - name: DB_LOC
               value: {{ .Values.deployment.db_address }}
-            - name: PG_PORT
-              value: {{ .Values.deployment.db_port }}
+            - name: DB_PORT
+              value: "5432" 
             - name: JWT_KEY
               valueFrom:
                 secretKeyRef:
-                  key: jwt-key
-                  name: authn-creds
+                  key: jwtkey
+                  name: authn-sec
       volumes:
         - configMap:
-            name: {{ .Values.name }}-{{ .Values.deployment.webserver.name }}-config
+            name: {{ .Values.general.name }}-{{ .Values.deployment.webserver.name }}-config
           name: {{ .Values.deployment.webserver.name }}-config
