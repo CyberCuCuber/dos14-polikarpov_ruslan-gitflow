@@ -39,7 +39,19 @@ spec:
           image: {{ .Values.deployment.app.image }}
           env:
             {{- include "helpers.list-env-variables" . | indent 12 }}
-            {{- include "helpers.list-vars-db-loc" . | indent 12}} 
+            {{- include "helpers.list-vars-db-loc" . | indent 12}}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.deployment.probes.liveness.path }}
+              port: {{ .Values.deployment.probes.liveness.port }}
+            initialDelaySeconds: {{ .Values.deployment.probes.liveness.initialDelay }}
+            timeoutSeconds: {{ .Values.deployment.probes.liveness.timeout }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.deployment.probes.readiness.path }}
+              port: {{ .Values.deployment.probes.readiness.port }}
+            initialDelaySeconds: {{ .Values.deployment.probes.readiness.initialDelay }}
+            timeoutSeconds: {{ .Values.deployment.probes.readiness.timeout }}
       volumes:
         - configMap:
             name: {{ .Values.general.name }}-{{ .Values.deployment.webserver.name }}-config

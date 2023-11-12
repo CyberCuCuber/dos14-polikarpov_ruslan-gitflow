@@ -40,6 +40,17 @@ deployment:
       DB_LOC: omegabank-rds-tf.cearikylb8tb.eu-west-1.rds.amazonaws.com
       DB_PORT: "5432"
   replicas: 1
+  probes:
+    liveness:
+      path: /api/v1/authn/health_check
+      port: 80
+      initialDelay: 15
+      timeout: 2
+    readiness:
+      path: /api/v1/authn/health_check
+      port: 80
+      initialDelay: 30
+      timeout: 2
   strategy:
     type: RollingUpdate
     maxSurge: 1
