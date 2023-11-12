@@ -3,7 +3,7 @@ general:
   labels: {
     app: "authn",
     bank: "ivanoff",
-    env: "prod",
+    env: "prod"
   }
 ingress:
   ingressClassName: nginx
@@ -30,6 +30,15 @@ serviceaccount:
   automount: true
   annotations: {}
 deployment:
+  env:
+    secrets:
+      DB_NAME: DB_NAME
+      DB_PASS: DB_PASS
+      DB_USER: DB_USER
+      JWT_KEY: JWT_KEY
+    db: 
+      DB_LOC: omegabank-rds-tf.cearikylb8tb.eu-west-1.rds.amazonaws.com
+      DB_PORT: "5432"
   replicas: 2
   strategy:
     type: RollingUpdate
@@ -45,6 +54,3 @@ deployment:
   app:
     name: authn-app
     image: cybercucumber/authn_service:latest
-  db_address: omegabank-rds-tf.cearikylb8tb.eu-west-1.rds.amazonaws.com
-  db_port: "5432"
-
