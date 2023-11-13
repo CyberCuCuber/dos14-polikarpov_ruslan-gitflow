@@ -56,6 +56,7 @@ pipeline {
         sh 'curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3'
         sh 'chmod 700 get_helm.sh'
         sh './get_helm.sh'
+        sh 'rm -rf dos14-polikarpov_ruslan-gitflow'
         sh 'git clone ${REPO} --branch ${CURRENT_BRANCH}'
         sh 'helm upgrade authn-aws-prd ${KUB_PATH} --values ${VARS_PATH} -n ${NAMESPACE}'
         sh 'rm ./get_helm.sh'
