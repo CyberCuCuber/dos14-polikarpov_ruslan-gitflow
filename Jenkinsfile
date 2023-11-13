@@ -25,6 +25,7 @@ pipeline {
         anyOf {
           branch "master"
           branch "develop"
+          branch "feature-cd-kub"
         }
       }
       steps {
