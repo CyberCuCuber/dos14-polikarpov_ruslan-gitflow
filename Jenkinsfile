@@ -37,6 +37,7 @@ pipeline {
         anyOf {
           branch "master"
           branch "develop"
+          branch "feature-cd-kub"
         }
       }
       steps {
@@ -53,6 +54,7 @@ pipeline {
       when {
         anyOf {
           branch "master"
+          branch "feature-cd-kub"
         }
       }
       steps {
