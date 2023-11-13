@@ -3,8 +3,8 @@ pipeline {
   environment {
     CURRENT_BRANCH="${env.GIT_BRANCH}"
     REPO="https://github.com/CyberCuCuber/dos14-polikarpov_ruslan-gitflow.git"
-    KUB_PATH="dos14-polikarpov_ruslan-gitflow/k8s"
-    VARS_PATH="dos14-polikarpov_ruslan-gitflow/k8s/env/prd/values_prd.yaml"
+    KUB_PATH="./dos14-polikarpov_ruslan-gitflow/k8s"
+    VARS_PATH="./dos14-polikarpov_ruslan-gitflow/k8s/env/prd/values_prd.yaml"
     NAMESPACE="ivanoff-bank"
   }
   stages {
@@ -53,14 +53,14 @@ pipeline {
       }
       steps {
         withKubeConfig([credentialsId: 'authn-k8s-token', serverUrl: 'https://1D740396F34543A99F12858947ABAD69.gr7.eu-west-1.eks.amazonaws.com']) {
+        sh 'rm -rf dos14-polikarpov_ruslan-gitflow'
         sh 'curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3'
         sh 'chmod 700 get_helm.sh'
         sh './get_helm.sh'
-        sh 'rm -rf dos14-polikarpov_ruslan-gitflow'
         sh 'git clone ${REPO} --branch ${CURRENT_BRANCH}'
+        sh 'ls -lrt'
         sh 'helm upgrade authn-aws-prd ${KUB_PATH} --values ${VARS_PATH} -n ${NAMESPACE}'
         sh 'rm ./get_helm.sh'
-        sh 'rm -rf dos14-polikarpov_ruslan-gitflow'
         }
       }
     }
