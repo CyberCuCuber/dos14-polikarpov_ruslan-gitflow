@@ -57,7 +57,7 @@ pipeline {
         }
       }
       steps {
-        withKubeConfig([credentialsId: '${KUB_TOKEN_NAME}', serverUrl: '${SERVER_URL}']) {
+        withKubeConfig([credentialsId: ${KUB_TOKEN_NAME}, serverUrl: ${SERVER_URL}]) {
         sh 'curl -fsSL -o ${HELM_FILE} ${HELM_SOURCE}'
         sh 'chmod 700 ${HELM_FILE}'
         sh './${HELM_FILE}'
