@@ -64,4 +64,5 @@ deployment:
     volumeMountPath: /etc/nginx
   app:
     name: authn-app
-    image: cybercucumber/authn_service:latest
+    image: cybercucumber/authn_service
+    tag: latest

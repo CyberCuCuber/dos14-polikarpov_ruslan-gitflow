@@ -2,6 +2,7 @@ pipeline {
   agent any
   environment {
     CURRENT_BRANCH="${env.GIT_BRANCH}"
+    COMMIT_HASH="${env.GIT_COMMIT}"
     KUB_PATH="k8s"
     VARS_PATH="k8s/env/prd/values-prd.yaml"
     NAMESPACE="ivanoff-bank"
@@ -59,7 +60,7 @@ pipeline {
         sh 'curl -fsSL -o ${HELM_FILE} ${HELM_SOURCE}'
         sh 'chmod 700 ${HELM_FILE}'
         sh './${HELM_FILE}'
-        sh 'helm upgrade ${KUB_RELEASE} ${KUB_PATH} --values ${VARS_PATH} -n ${NAMESPACE}'
+        sh 'helm upgrade ${KUB_RELEASE} ${KUB_PATH} --values ${VARS_PATH} -n ${NAMESPACE} --set deployment.app.tag=${COMMIT_HASH}'
         sh 'rm ./${HELM_FILE}'
         }
       }

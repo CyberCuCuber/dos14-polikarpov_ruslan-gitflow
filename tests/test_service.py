@@ -1,7 +1,7 @@
 import requests
 import json
 
-HOST = "https://ivanoff.smodata.net/authn/"
+HOST = "https//ivanoff.smodata.net/authn/"
 LOGIN = f"{HOST}api/v1/identity/login"
 VALIDATE = f"{HOST}api/v1/identity/validate"
 IDENTITY = f"{HOST}api/v1/identity"

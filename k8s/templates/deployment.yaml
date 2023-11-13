@@ -36,7 +36,7 @@ spec:
             - name: {{ .Values.deployment.webserver.volumeName }}
               mountPath: {{ .Values.deployment.webserver.volumeMountPath }}
         - name: {{ .Values.deployment.app.name }}
-          image: {{ .Values.deployment.app.image }}
+          image: '{{ .Values.deployment.app.image }} {{ .Values.deployment.app.tag }}'
           env:
             {{- include "helpers.list-env-variables" . | indent 12 }}
             {{- include "helpers.list-vars-db-loc" . | indent 12}}
