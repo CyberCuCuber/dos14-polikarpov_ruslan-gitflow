@@ -20,3 +20,7 @@ spec:
                 name: {{ .Values.general.name }}-svc
                 port:
                   number: {{ .Values.ingress.paths.authn.service_port }}
+  tls:
+    - hosts:
+      - {{ .Values.ingress.host }}
+      secretName: {{ .Values.ingress.secretCertName }}      
