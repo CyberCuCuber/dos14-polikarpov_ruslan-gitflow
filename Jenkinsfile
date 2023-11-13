@@ -3,6 +3,9 @@ pipeline {
   environment {
     CURRENT_BRANCH="${env.GIT_BRANCH}"
     REPO="https://github.com/CyberCuCuber/dos14-polikarpov_ruslan-gitflow.git"
+    KUB_PATH="dos14-polikarpov_ruslan-gitflow/k8s"
+    VARS_PATH="dos14-polikarpov_ruslan-gitflow/k8s/env/prd/values_prd.yaml"
+    NAMESPACE="ivanoff-bank"
   }
   stages {
     stage('Lint') {
@@ -54,7 +57,7 @@ pipeline {
         sh 'chmod 700 get_helm.sh'
         sh './get_helm.sh'
         sh 'git clone ${REPO} --branch ${CURRENT_BRANCH}'
-        sh 'helm upgrade authn-aws-prd dos14-polikarpov_ruslan-gitflow/k8s --values dos14-Eremeev-GitFlow/k8s/env/prd/values_prd.yaml -n ivanoff-bank'
+        sh 'helm upgrade authn-aws-prd ${KUB_PATH} --values ${VARS_PATH} -n ${NAMESPACE}'
         sh 'rm ./get_helm.sh'
         sh 'rm -rf dos14-polikarpov_ruslan-gitflow'
         }
