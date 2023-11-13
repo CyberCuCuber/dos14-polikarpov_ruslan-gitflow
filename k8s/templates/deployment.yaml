@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name     : {{ .Values.general.name }}-deployment
+  namespace: {{ .Release.Namespace }}
+  {{- with .Values.general.labels }}
+  labels:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  replicas: {{ .Values.deployment.replicas }}
+  selector:
+    {{- with .Values.general.labels }}
+    matchLabels:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+  strategy:
+    type: {{ .Values.deployment.strategy.type }}
+    rollingUpdate:
+      maxSurge: {{ .Values.deployment.strategy.maxSurge }}
+  template:
+    metadata:
+      {{- with .Values.general.labels }}
+      labels:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      containers:
+        - name: {{ .Values.deployment.webserver.name }}
+          image: {{ .Values.deployment.webserver.image }}
+          ports:
+            - containerPort: {{ .Values.deployment.webserver.containerPort }}
+              name: {{ .Values.deployment.webserver.portName }}
+              protocol: {{ .Values.deployment.webserver.protocol }}
+          volumeMounts:
+            - name: {{ .Values.deployment.webserver.volumeName }}
+              mountPath: {{ .Values.deployment.webserver.volumeMountPath }}
+        - name: {{ .Values.deployment.app.name }}
+          image: '{{ .Values.deployment.app.image }}:{{ .Values.deployment.app.tag }}'
+          env:
+            {{- include "helpers.list-env-variables" . | indent 12 }}
+            {{- include "helpers.list-vars-db-loc" . | indent 12}}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.deployment.probes.liveness.path }}
+              port: {{ .Values.deployment.probes.liveness.port }}
+            initialDelaySeconds: {{ .Values.deployment.probes.liveness.initialDelay }}
+            timeoutSeconds: {{ .Values.deployment.probes.liveness.timeout }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.deployment.probes.readiness.path }}
+              port: {{ .Values.deployment.probes.readiness.port }}
+            initialDelaySeconds: {{ .Values.deployment.probes.readiness.initialDelay }}
+            timeoutSeconds: {{ .Values.deployment.probes.readiness.timeout }}
+      volumes:
+        - configMap:
+            name: {{ .Values.general.name }}-{{ .Values.deployment.webserver.name }}-config
+          name: {{ .Values.deployment.webserver.name }}-config
