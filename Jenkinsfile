@@ -47,18 +47,18 @@ pipeline {
           branch "master"
           branch "feature-cd-kub"
         }
-        steps {
-          current_branch=${env.GIT_BRANCH}
-          withKubeConfig([credentialsId: 'authn-k8s-token', serverUrl: 'https://1D740396F34543A99F12858947ABAD69.gr7.eu-west-1.eks.amazonaws.com']) {
-          sh 'curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3'
-          sh 'chmod 700 get_helm.sh'
-          sh './get_helm.sh'
-          sh 'git clone ${REPO} --branch ${CURRENT_BRANCH}'
-          sh 'helm upgrade authn-aws-prd dos14-polikarpov_ruslan-gitflow/k8s --values dos14-Eremeev-GitFlow/k8s/env/prd/values_prd.yaml -n ivanoff-bank'
-          sh 'rm ./get_helm.sh'
-          sh 'rm -rf dos14-polikarpov_ruslan-gitflow'
+      steps {
+        withKubeConfig([credentialsId: 'authn-k8s-token', serverUrl: 'https://1D740396F34543A99F12858947ABAD69.gr7.eu-west-1.eks.amazonaws.com']) {
+        sh 'curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3'
+        sh 'chmod 700 get_helm.sh'
+        sh './get_helm.sh'
+        sh 'git clone ${REPO} --branch ${CURRENT_BRANCH}'
+        sh 'helm upgrade authn-aws-prd dos14-polikarpov_ruslan-gitflow/k8s --values dos14-Eremeev-GitFlow/k8s/env/prd/values_prd.yaml -n ivanoff-bank'
+        sh 'rm ./get_helm.sh'
+        sh 'rm -rf dos14-polikarpov_ruslan-gitflow'
         }
       }
     }
   }
+}
 }
