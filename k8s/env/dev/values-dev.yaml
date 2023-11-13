@@ -1,0 +1,68 @@
+general:
+  name: authn-dev  
+  labels: {
+    app: "authn-dev",
+    bank: "ivanoff",
+    env: "dev"
+  }
+ingress:
+  ingressClassName: nginx
+  annotations: {
+      nginx.ingress.kubernetes.io/use-regex: "true",
+      nginx.ingress.kubernetes.io/rewrite-target: /$1,
+      nginx.ingress.kubernetes.io/service-upstream: "true",
+      cert-manager.io/cluster-issuer: "letsencrypt-prod",
+      kubernetes.io/ingress.class: "nginx"
+  }
+  host: ivanoff.smodata.net
+  secretCertName: ivanoff-tls
+  paths:
+    authn:
+      path: /authn(.*)
+      pathType: ImplementationSpecific
+      service_port: "80"
+service:
+  port: 80
+  targetPort: 80
+  protocol: TCP
+serviceaccount:
+  create: true
+  automount: true
+  annotations: {}
+deployment:
+  env:
+    secrets:
+      DB_NAME: DB_NAME
+      DB_PASS: DB_PASS
+      DB_USER: DB_USER
+      JWT_KEY: JWT_KEY
+    db: 
+      DB_LOC: omegabank-rds-tf.cearikylb8tb.eu-west-1.rds.amazonaws.com
+      DB_PORT: "5432"
+  replicas: 1
+  probes:
+    liveness:
+      path: /api/v1/authn/health_check
+      port: 80
+      initialDelay: 15
+      timeout: 2
+    readiness:
+      path: /api/v1/authn/health_check
+      port: 80
+      initialDelay: 30
+      timeout: 2
+  strategy:
+    type: RollingUpdate
+    maxSurge: 1
+  webserver:
+    name: nginx-dev
+    image: nginx:1.25.0
+    containerPort: 80
+    portName: http
+    protocol: TCP
+    volumeName: nginx-config
+    volumeMountPath: /etc/nginx
+  app:
+    name: authn-dev-app
+    image: cybercucumber/authn_service
+    tag: latest
