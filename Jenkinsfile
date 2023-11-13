@@ -29,7 +29,7 @@ pipeline {
       }
       steps {
         script {
-          def image = docker.build "cybercucumber/authn_service:${env.GIT_COMMIT}"
+          def image = docker.build "cybercucumber/authn_service:${env.GIT_BRANCH}"
           docker.withRegistry('','dockerhub-authn') {
             image.push()
             image.push('latest')
@@ -37,16 +37,16 @@ pipeline {
         }
       }
     }
-    stage('Deploy HELM'){
-      when {
-        anyOf {
-          branch "master"
-          branch "feature-cd-kub"
-        }
-        steps {
-          sh "echo '$env'" 
-        }
-      }
-    }
+    // stage('Deploy HELM'){
+    //   when {
+    //     anyOf {
+    //       branch "master"
+    //       branch "feature-cd-kub"
+    //     }
+    //     steps {
+    //       sh "echo '$env'" 
+    //     }
+    //   }
+    // }
   }
 }
