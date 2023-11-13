@@ -58,9 +58,7 @@ pipeline {
         sh 'chmod 700 get_helm.sh'
         sh './get_helm.sh'
         sh 'git clone ${REPO} --branch ${CURRENT_BRANCH}'
-        sh 'ls -lrt'
-        sh 'cd ..'
-        sh 'ls -lrt'
+        sh 'ls -lrt ../'
         sh 'helm upgrade authn-aws-prd ${KUB_PATH} --values ${VARS_PATH} -n ${NAMESPACE}'
         sh 'rm ./get_helm.sh'
         }
