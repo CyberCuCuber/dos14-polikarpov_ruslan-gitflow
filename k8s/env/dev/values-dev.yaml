@@ -1,9 +1,9 @@
 general:
-  name: authn  
+  name: authn-dev  
   labels: {
-    app: "authn",
+    app: "authn-dev",
     bank: "ivanoff",
-    env: "prd"
+    env: "dev"
   }
 ingress:
   ingressClassName: nginx
@@ -55,7 +55,7 @@ deployment:
     type: RollingUpdate
     maxSurge: 1
   webserver:
-    name: nginx
+    name: nginx-dev
     image: nginx:1.25.0
     containerPort: 80
     portName: http
@@ -63,5 +63,5 @@ deployment:
     volumeName: nginx-config
     volumeMountPath: /etc/nginx
   app:
-    name: authn-app
+    name: authn-dev-app
     image: cybercucumber/authn_service:latest
