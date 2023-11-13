@@ -15,7 +15,7 @@ ingress:
       kubernetes.io/ingress.class: "nginx"
   }
   host: ivanoff.smodata.net
-  secretCertName: ivanoff-tls
+  secretCertName: ivanoff-tls-v2
   paths:
     authn:
       path: /authn(.*)
