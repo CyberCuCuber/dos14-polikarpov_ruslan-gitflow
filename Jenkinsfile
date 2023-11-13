@@ -2,7 +2,6 @@ pipeline {
   agent any
   environment {
     CURRENT_BRANCH="${env.GIT_BRANCH}"
-    REPO="https://github.com/CyberCuCuber/dos14-polikarpov_ruslan-gitflow.git"
     KUB_PATH="k8s"
     VARS_PATH="k8s/env/prd/values-prd.yaml"
     NAMESPACE="ivanoff-bank"
@@ -53,7 +52,6 @@ pipeline {
       when {
         anyOf {
           branch "master"
-          branch "feature-cd-kub"
         }
       }
       steps {
