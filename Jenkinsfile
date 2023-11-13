@@ -37,5 +37,16 @@ pipeline {
         }
       }
     }
+    stage('Deploy HELM'){
+      when {
+        anyOf {
+          branch "master"
+          branch "feature-cd-kub"
+        }
+        steps {
+          sh "echo '$env'" 
+        }
+      }
+    }
   }
 }
