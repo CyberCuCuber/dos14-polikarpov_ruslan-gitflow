@@ -1,4 +1,2 @@
 .env
 k8s/secret*
-*token.yaml
-k8s/templates/SAtoken*
