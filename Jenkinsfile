@@ -6,6 +6,11 @@ pipeline {
     KUB_PATH="k8s"
     VARS_PATH="k8s/env/prd/values-prd.yaml"
     NAMESPACE="ivanoff-bank"
+    KUB_RELEASE="authn-aws-prd"
+    HELM_SOURCE="https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3"
+    KUB_TOKEN_NAME="authn-k8s-token"
+    SERVER_URL="https://1D740396F34543A99F12858947ABAD69.gr7.eu-west-1.eks.amazonaws.com"
+    HELM_FILE="helm_get_from_repo.sh"
   }
   stages {
     stage('Lint') {
@@ -52,18 +57,12 @@ pipeline {
         }
       }
       steps {
-        withKubeConfig([credentialsId: 'authn-k8s-token', serverUrl: 'https://1D740396F34543A99F12858947ABAD69.gr7.eu-west-1.eks.amazonaws.com']) {
-        // sh 'rm -rf dos14-polikarpov_ruslan-gitflow'
-        sh 'curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3'
-        sh 'chmod 700 get_helm.sh'
-        sh './get_helm.sh'
-        // sh 'git clone ${REPO} --branch ${CURRENT_BRANCH}'
-        sh 'ls -lrt'
-        sh 'ls k8s'
-        sh 'ls k8s/env/'
-        sh 'ls k8s/env/prd'
-        sh 'helm upgrade authn-aws-prd ${KUB_PATH} --values ${VARS_PATH} -n ${NAMESPACE}'
-        sh 'rm ./get_helm.sh'
+        withKubeConfig([credentialsId: '${KUB_TOKEN_NAME}', serverUrl: '${SERVER_URL}']) {
+        sh 'curl -fsSL -o ${HELM_FILE} ${HELM_SOURCE}'
+        sh 'chmod 700 ${HELM_FILE}'
+        sh './${HELM_FILE}'
+        sh 'helm upgrade ${KUB_RELEASE} ${KUB_PATH} --values ${VARS_PATH} -n ${NAMESPACE}'
+        sh 'rm ./${HELM_FILE}'
         }
       }
     }
